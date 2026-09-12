@@ -1,0 +1,1449 @@
+\documentclass[11pt,a4paper]{ctexart}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{bm}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,calc}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usetikzlibrary{positioning}
+
+\title{\textbf{最优化方法第1章习题详解（1.1 -- 1.27）}}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{习题 1.1}
+\textbf{题目：} 要建筑容积为 $V\text{ m}^3$ 的长方形蓄水池（无盖），如何选定长、宽、高的尺寸，可使建筑材料最省（即表面积最小）？
+
+\paragraph{解：}
+设长方体蓄水池的长为 $x$ 米，宽为 $y$ 米，高为 $z$ 米（$x, y, z > 0$）。
+\begin{enumerate}
+    \item 容积约束为：
+    \[
+    V = xyz \implies z = \frac{V}{xy}
+    \]
+    \item 由于蓄水池无盖，其表面积由一个底面和四个侧面构成：
+    \[
+    S(x, y, z) = xy + 2xz + 2yz
+    \]
+    将 $z = \frac{V}{xy}$ 代入，消去变量 $z$，转化为关于 $x, y$ 的无约束优化问题：
+    \[
+    \min_{x>0, y>0} S(x, y) = xy + \frac{2V}{y} + \frac{2V}{x}
+    \]
+    \item \textbf{方法一（导数法）：}
+    求目标函数关于 $x$ 和 $y$ 的一阶偏导数，并令其为 0：
+    \[
+    \begin{cases}
+    \dfrac{\partial S}{\partial x} = y - \dfrac{2V}{x^2} = 0 \implies x^2 y = 2V \\[2mm]
+    \dfrac{\partial S}{\partial y} = x - \dfrac{2V}{y^2} = 0 \implies x y^2 = 2V
+    \end{cases}
+    \]
+    两式相除得 $\dfrac{x}{y} = 1 \implies x = y$。代入得：
+    \[
+    x^3 = 2V \implies x = y = (2V)^{1/3} = \sqrt[3]{2V}
+    \]
+    进而求得水池的高：
+    \[
+    z = \frac{V}{xy} = \frac{V}{(2V)^{2/3}} = \frac{1}{2}(2V)^{1/3} = \frac{1}{2}\sqrt[3]{2V} = \frac{x}{2}
+    \]
+    
+    \item \textbf{方法二（算术--几何平均不等式法）：}
+    利用三元均值不等式，对 $xy, \dfrac{2V}{x}, \dfrac{2V}{y}$ 应用不等式：
+    \[
+    S(x, y) = xy + \frac{2V}{x} + \frac{2V}{y} \ge 3 \sqrt[3]{xy \cdot \frac{2V}{x} \cdot \frac{2V}{y}} = 3 \sqrt[3]{4V^2}
+    \]
+    当且仅当 $xy = \dfrac{2V}{x} = \dfrac{2V}{y}$ 时等号成立，解得：
+    \[
+    x = y = \sqrt[3]{2V}, \quad z = \frac{1}{2}\sqrt[3]{2V}
+    \]
+\end{enumerate}
+\textbf{结论：} 当蓄水池的长和宽均为 $\sqrt[3]{2V}\text{ 米}$，高为 $\dfrac{1}{2}\sqrt[3]{2V}\text{ 米}$（即底面为正方形，高为底边长的一半）时，建筑材料最省，此时最小表面积为 $3\sqrt[3]{4V^2}\text{ m}^2$。
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.2}
+\textbf{题目：} 试求半径为 $R$ 的圆的所有内接三角形面积的最大值。
+
+\paragraph{解：}
+设三角形三边对圆心的圆心角分别为 $\alpha, \beta, \gamma \in (0, \pi)$，且满足 $\alpha + \beta + \gamma = 2\pi$。  
+消去变量 $\gamma = 2\pi - (\alpha + \beta)$，三角形面积函数可表示为关于 $\alpha, \beta$ 的二元函数：
+\[
+S(\alpha, \beta) = \frac{1}{2} R^2 \left[ \sin\alpha + \sin\beta + \sin(2\pi - (\alpha + \beta)) \right] = \frac{1}{2} R^2 \left[ \sin\alpha + \sin\beta - \sin(\alpha + \beta) \right]
+\]
+求一阶偏导数并令其为 0：
+\[
+\begin{cases}
+\dfrac{\partial S}{\partial \alpha} = \dfrac{1}{2}R^2 [\cos\alpha - \cos(\alpha+\beta)] = 0 \implies \cos\alpha = \cos(\alpha+\beta) \\[2mm]
+\dfrac{\partial S}{\partial \beta} = \dfrac{1}{2}R^2 [\cos\beta - \cos(\alpha+\beta)] = 0 \implies \cos\beta = \cos(\alpha+\beta)
+\end{cases}
+\]
+在开区间 $(0, \pi)$ 内，由余弦函数单调性可得 $\alpha = \beta$。将其代入第一式：
+\[
+\cos\alpha = \cos(2\alpha) = 2\cos^2\alpha - 1 \implies 2\cos^2\alpha - \cos\alpha - 1 = 0
+\]
+解关于 $\cos\alpha$ 的二次方程 $(2\cos\alpha + 1)(\cos\alpha - 1) = 0$。  
+因 $\alpha \in (0, \pi)$，$\cos\alpha \neq 1$，故解得：
+\[
+\cos\alpha = -\frac{1}{2} \implies \alpha = \frac{2\pi}{3}
+\]
+进而有 $\beta = \dfrac{2\pi}{3}$，以及 $\gamma = 2\pi - (\alpha + \beta) = \dfrac{2\pi}{3}$。  
+此时内接三角形为等边三角形，面积取得最大值：
+\[
+S_{\max} = \frac{1}{2}R^2 \left( \sin\frac{2\pi}{3} + \sin\frac{2\pi}{3} + \sin\frac{2\pi}{3} \right) = \frac{3\sqrt{3}}{4} R^2
+\]
+\textbf{结论：} 半径为 $R$ 的圆的所有内接三角形面积的最大值为 $\dfrac{3\sqrt{3}}{4} R^2$（此时内接三角形为正三角形）。
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.3}
+\textbf{题目：} 在曲面 $f_1(x_1, x_2, x_3)=0$ 上找一点 $P_1$，在曲面 $f_2(x_1, x_2, x_3)=0$ 上找一点 $P_2$，使得 $P_1$ 与 $P_2$ 的距离为最短。试将这个问题作为最优化问题列出来。
+
+\paragraph{解：}
+设曲面 $f_1$ 上的点为 $P_1(x_1, x_2, x_3)$，曲面 $f_2$ 上的点为 $P_2(x_4, x_5, x_6)$。最优化数学模型为：
+\[
+\begin{aligned}
+\min \quad & \sqrt{(x_1 - x_4)^2 + (x_2 - x_5)^2 + (x_3 - x_6)^2} \\
+\text{s.t.} \quad & f_1(x_1, x_2, x_3) = 0 \\
+& f_2(x_4, x_5, x_6) = 0
+\end{aligned}
+\]
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.4}
+\textbf{题目：} 已知两个物理量 $x$ 和 $y$ 之间的依赖关系为
+\[
+y = a_1 + \frac{a_2}{1 + a_3 \ln\left(1 + \exp\dfrac{x - a_4}{a_5}\right)}
+\]
+其中 $a_1, a_2, a_3, a_4$ 和 $a_5$ 是待定参数。为了确定这些参数的值，对 $x$ 和 $y$ 测得 $m$ 个实验点：$(x_1, y_1), (x_2, y_2), \cdots, (x_m, y_m)$。试将确定参数的问题表示成最优化问题。
+
+\paragraph{解：}
+这是一个典型的非线性最小二乘数据拟合问题。
+记参数向量为 $\bm{a} = (a_1, a_2, a_3, a_4, a_5)^T$。对于给定的输入 $x_i$，模型的理论预测输出为：
+\[
+\hat{y}(x_i; \bm{a}) = a_1 + \frac{a_2}{1 + a_3 \ln\left(1 + \exp\left(\dfrac{x_i - a_4}{a_5}\right)\right)}
+\]
+采用最小二乘准则，定义各实验点观测值 $y_i$ 与模型预测值之间的残差平方和为目标函数：
+\[
+\min_{\bm{a} \in \mathbb{R}^5} \quad E(a_1, a_2, a_3, a_4, a_5) = \sum_{i=1}^{m} \left[ y_i - \left( a_1 + \frac{a_2}{1 + a_3 \ln\left(1 + \exp\left(\dfrac{x_i - a_4}{a_5}\right)\right)} \right) \right]^2
+\]
+在物理实际中，为保证分母与对数有定义，通常附加参数约束条件：$a_5 \neq 0$ 且 $1 + a_3 \ln\left(1 + \exp\dfrac{x_i - a_4}{a_5}\right) \neq 0$（$\forall i=1,\dots,m$）。
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.5}
+\textbf{题目：} 在某城市的某一区域内准备修建一座电子计算中心，现有 $m$ 个单位需要安装终端，这些单位的坐标是 $(x_1, y_1), (x_2, y_2), \cdots, (x_m, y_m)$。问计算中心修建在什么位置上，可使安装终端所用的电缆最短？试建立这个最优化问题的数学模型。假设电缆总是沿街道铺设的，而街道都是与某坐标轴平行或垂直的。
+
+\paragraph{解：}
+设电子计算中心拟修建的选址坐标为 $(x, y) \in \mathbb{R}^2$。
+由于电缆沿与坐标轴平行的街道铺设，计算中心 $(x, y)$ 与第 $i$ 个单位 $(x_i, y_i)$ 之间的管线距离为曼哈顿距离（$L_1$ 距离）：
+\[
+d_i(x, y) = |x - x_i| + |y - y_i|
+\]
+铺设到所有 $m$ 个终端所用电缆的总长度为：
+\[
+L(x, y) = \sum_{i=1}^m \left( |x - x_i| + |y - y_i| \right)
+\]
+因此，该问题的最优化数学模型为：
+\[
+\min_{x, y \in \mathbb{R}} \quad \sum_{i=1}^{m} |x - x_i| + \sum_{i=1}^{m} |y - y_i|
+\]
+\paragraph{求解特性分析：}
+由于关于 $x$ 和关于 $y$ 的项完全解耦，该问题可以拆分为两个独立的一维中位数问题：
+\[
+\min_{x \in \mathbb{R}} \sum_{i=1}^m |x - x_i| \quad \text{和} \quad \min_{y \in \mathbb{R}} \sum_{i=1}^m |y - y_i|
+\]
+其最优解 $x^*$ 和 $y^*$ 分别取为点集序列 $\{x_i\}_{i=1}^m$ 和 $\{y_i\}_{i=1}^m$ 的中位数（Median）。
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.6}
+\textbf{题目：} 试把下面的线性规划用向量和矩阵形式表示出来：
+\[
+\begin{aligned}
+\min \quad & x_1 + 4x_2 + x_3 \\
+\text{s.t.} \quad & 2x_1 - 2x_2 + x_3 = 4 \\
+& x_1 \quad\quad\ \ - x_3 = 1 \\
+& x_1, x_2, x_3 \ge 0
+\end{aligned}
+\]
+
+\paragraph{解：}
+引入向量和矩阵：
+\[
+\bm{x} = \begin{bmatrix} x_1 \\ x_2 \\ x_3 \end{bmatrix}, \quad
+\bm{c} = \begin{bmatrix} 1 \\ 4 \\ 1 \end{bmatrix}, \quad
+\bm{A} = \begin{bmatrix} 2 & -2 & 1 \\ 1 & 0 & -1 \end{bmatrix}, \quad
+\bm{b} = \begin{bmatrix} 4 \\ 1 \end{bmatrix}, \quad
+\bm{0} = \begin{bmatrix} 0 \\ 0 \\ 0 \end{bmatrix}
+\]
+该线性规划的标准向量/矩阵形式为：
+\[
+\begin{aligned}
+\min \quad & \bm{c}^T \bm{x} \\
+\text{s.t.} \quad & \bm{A}\bm{x} = \bm{b} \\
+& \bm{x} \ge \bm{0}
+\end{aligned}
+\]
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.7}
+\textbf{题目：} 试用图解法求解下列问题。
+
+\subsection*{(1)}
+\[
+\begin{aligned}
+\min \quad & f(x_1, x_2) = (x_1 - 2)^2 + (x_2 - 2)^2 \\
+\text{s.t.} \quad & x_1 + 2x_2 = 4 \\
+& x_1, x_2 \ge 0
+\end{aligned}
+\]
+\paragraph{解：}
+\begin{enumerate}
+    \item 可行域为连结端点 $(4, 0)$ 和 $(0, 2)$ 的闭线段。
+    \item 目标函数表示可行域内的点到参考点 $P(2, 2)$ 的欧氏距离平方。
+    \item 点 $P(2, 2)$ 到直线 $x_1 + 2x_2 - 4 = 0$ 的垂足坐标满足：
+    \[
+    t = \frac{4 - (1\cdot 2 + 2\cdot 2)}{1^2 + 2^2} = -\frac{2}{5}
+    \]
+    垂足点坐标为：
+    \[
+    x_1^* = 2 + 1\cdot\left(-\frac{2}{5}\right) = \frac{8}{5}, \quad x_2^* = 2 + 2\cdot\left(-\frac{2}{5}\right) = \frac{6}{5}
+    \]
+    该垂足满足 $x_1^* \ge 0, x_2^* \ge 0$，位于可行域线段内部。
+    \item 极小值为：
+    \[
+    f_{\min} = \left(\frac{8}{5} - 2\right)^2 + \left(\frac{6}{5} - 2\right)^2 = \left(-\frac{2}{5}\right)^2 + \left(-\frac{4}{5}\right)^2 = \frac{4 + 16}{25} = \frac{20}{25} = \frac{4}{5} = 0.8
+    \]
+\end{enumerate}
+最优解为 $\bm{x}^* = \left(\dfrac{8}{5}, \dfrac{6}{5}\right)$，极小值为 $\dfrac{4}{5}$。
+
+\begin{center}
+\begin{tikzpicture}[scale=1.1]
+    \draw[->] (-0.5,0) -- (5,0) node[right] {$x_1$};
+    \draw[->] (0,-0.5) -- (0,3.5) node[above] {$x_2$};
+    \draw[ultra thick, blue] (4,0) -- (0,2) node[midway, above right] {$x_1+2x_2=4$};
+    \fill[red] (2,2) circle (2pt) node[above right] {$P(2,2)$};
+    \fill[blue] (1.6, 1.2) circle (2pt) node[below left] {$\bm{x}^*(1.6, 1.2)$};
+    \draw[dashed, red] (2,2) -- (1.6,1.2);
+    \draw[dashed, gray] (2,2) circle ({sqrt(0.8)});
+\end{tikzpicture}
+\end{center}
+
+\subsection*{(2)}
+\[
+\begin{aligned}
+\min \quad & f(x_1, x_2) = (x_1 - 6)^2 + (x_2 - 2)^2 \\
+\text{s.t.} \quad & 0.5x_1 + x_2 \le 4 \iff x_1 + 2x_2 \le 8 \\
+& 3x_1 + x_2 \le 15 \\
+& x_1 + x_2 \ge 1 \\
+& x_1, x_2 \ge 0
+\end{aligned}
+\]
+\paragraph{解：}
+\begin{enumerate}
+    \item 目标函数表示平面点到 $P(6, 2)$ 的距离平方。
+    \item 求解可行域多边形的顶点：
+    \begin{itemize}
+        \item $x_1 + x_2 = 1$ 与两坐标轴交点：$(1, 0), (0, 1)$；
+        \item 直线 $x_1 + 2x_2 = 8$ 与 $x_1 = 0$ 交点：$(0, 4)$；
+        \item 直线 $x_1 + 2x_2 = 8$ 与 $3x_1 + x_2 = 15$ 的交点：联立解得 $(4.4, 1.8)$；
+        \item 直线 $3x_1 + x_2 = 15$ 与 $x_2 = 0$ 交点：$(5, 0)$。
+    \end{itemize}
+    可行域为凸五边形，顶点依次为 $(1, 0) \to (5, 0) \to (4.4, 1.8) \to (0, 4) \to (0, 1)$。
+    \item 点 $P(6, 2)$ 位于可行域外侧，距离其最近的边界是直线 $3x_1 + x_2 = 15$。
+    计算 $P(6, 2)$ 向直线 $3x_1 + x_2 - 15 = 0$ 所作的垂直投影：
+    \[
+    t = \frac{15 - (3\times 6 + 1\times 2)}{3^2 + 1^2} = \frac{15 - 20}{10} = -0.5
+    \]
+    垂足坐标：
+    \[
+    x_1^* = 6 + 3(-0.5) = 4.5, \quad x_2^* = 2 + 1(-0.5) = 1.5
+    \]
+    由于 $4.4 \le 4.5 \le 5$，且 $0.5(4.5) + 1.5 = 3.75 \le 4$，该点完全在线段边界上。
+    \item 极小值为：
+    \[
+    f_{\min} = (4.5 - 6)^2 + (1.5 - 2)^2 = (-1.5)^2 + (-0.5)^2 = 2.25 + 0.25 = 2.5
+    \]
+\end{enumerate}
+最优解为 $\bm{x}^* = (4.5, 1.5) = \left(\dfrac{9}{2}, \dfrac{3}{2}\right)$，极小值为 $2.5$。
+
+\begin{center}
+\begin{tikzpicture}[scale=0.9]
+    \draw[->] (-0.5,0) -- (7,0) node[right] {$x_1$};
+    \draw[->] (0,-0.5) -- (0,5) node[above] {$x_2$};
+    \fill[gray!30] (1,0) -- (5,0) -- (4.4,1.8) -- (0,4) -- (0,1) -- cycle;
+    \draw[thick] (1,0) -- (5,0) -- (4.4,1.8) -- (0,4) -- (0,1) -- cycle;
+    \fill[red] (6,2) circle (2pt) node[above right] {$P(6,2)$};
+    \fill[blue] (4.5, 1.5) circle (2pt) node[left] {$\bm{x}^*(4.5, 1.5)$};
+    \draw[dashed, red] (6,2) -- (4.5, 1.5);
+    \draw[dashed, gray] (6,2) circle ({sqrt(2.5)});
+\end{tikzpicture}
+\end{center}
+
+\subsection*{(3)}
+\[
+\begin{aligned}
+\min \quad & f(x_1, x_2) = x_1^2 + x_2^2 - 4x_1 + 4 = (x_1 - 2)^2 + x_2^2 \\
+\text{s.t.} \quad & -x_1^2 + x_2 - 1 \ge 0 \iff x_2 \ge x_1^2 + 1 \\
+& x_1 - x_2 + 2 \ge 0 \iff x_2 \le x_1 + 2 \\
+& x_1, x_2 \ge 0
+\end{aligned}
+\]
+\paragraph{解：}
+\begin{enumerate}
+    \item 目标函数是可行域内的点到点 $P(2, 0)$ 的欧氏距离平方。
+    \item 可行域下边界为抛物线 $x_2 = x_1^2 + 1$，上边界为直线 $x_2 = x_1 + 2$。二者在第一象限的交点满足 $x_1^2 - x_1 - 1 = 0 \implies x_1 = \dfrac{1+\sqrt{5}}{2} \approx 1.618$。
+    \item 距离点 $P(2, 0)$ 最近的点位于下边界抛物线 $x_2 = x_1^2 + 1$ 上。
+    将 $x_2 = x_1^2 + 1$ 代入目标函数：
+    \[
+    g(x_1) = (x_1 - 2)^2 + (x_1^2 + 1)^2 = x_1^4 + 3x_1^2 - 4x_1 + 5
+    \]
+    求一阶导数并令其为 0：
+    \[
+    g'(x_1) = 4x_1^3 + 6x_1 - 4 = 0 \implies 2x_1^3 + 3x_1 - 2 = 0 \iff x_1^3 + 1.5x_1 - 1 = 0
+    \]
+    由卡尔丹公式求解此一元三次方程：
+    \[
+    x_1^* = \sqrt[3]{\frac{1}{2} + \frac{\sqrt{6}}{4}} + \sqrt[3]{\frac{1}{2} - \frac{\sqrt{6}}{4}} \approx 1.03611 - 0.48256 = 0.5536
+    \]
+    代入抛物线方程得：
+    \[
+    x_2^* = (x_1^*)^2 + 1 = 0.55355^2 + 1 \approx 1.3064
+    \]
+    对应的极小值为：
+    \[
+    f_{\min} = g(0.55355) \approx (0.55355 - 2)^2 + 1.30642^2 \approx 3.799
+    \]
+    由于 $0 \le x_1^* \le 1.618$，最优解 $\bm{x}^* \approx [0.5536, 1.3064]^T$ 完全落在可行边界上。
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[scale=1.2]
+    \draw[->] (-0.5,0) -- (3.5,0) node[right] {$x_1$};
+    \draw[->] (0,-0.5) -- (0,4) node[above] {$x_2$};
+    \draw[domain=0:1.618, smooth, variable=\x, thick, blue] plot ({\x}, {\x*\x + 1});
+    \draw[domain=0:1.618, smooth, variable=\x, thick, blue] plot ({\x}, {\x + 2});
+    \draw[thick, blue] (0,1) -- (0,2);
+    \fill[red] (2,0) circle (2pt) node[below] {$P(2,0)$};
+    \fill[blue] (0.554, 1.306) circle (2pt) node[above left] {$\bm{x}^*\approx(0.554, 1.306)$};
+    \draw[dashed, red] (2,0) -- (0.554, 1.306);
+\end{tikzpicture}
+\end{center}
+
+\subsection*{(4)}
+\[
+\begin{aligned}
+\min \quad & f(x_1, x_2) = 4x_1^2 + 2x_1 x_2 + x_2^2 + 2x_1 + 3x_2 \\
+\text{s.t.} \quad & x_1 - x_2 \ge 0 \iff x_2 \le x_1 \\
+& x_1 + x_2 \le 4 \\
+& x_1 \le 3
+\end{aligned}
+\]
+\paragraph{解：}
+\begin{enumerate}
+    \item 画出由三条直线 $x_2 \le x_1$、$x_1 + x_2 \le 4$、$x_1 \le 3$ 所围成的二维凸多边形可行域。
+    \item 目标函数 $f(x_1, x_2) = 4x_1^2 + 2x_1 x_2 + x_2^2 + 2x_1 + 3x_2$ 的等值线是一族中心在驻点处的同心椭圆。
+    \item 驻点通过令梯度为零解得：
+    \[
+    \begin{cases}
+    8x_1 + 2x_2 + 2 = 0 \\
+    2x_1 + 2x_2 + 3 = 0
+    \end{cases}
+    \implies x_1^* = \frac{1}{6}, \quad x_2^* = -\frac{5}{3}
+    \]
+    \item 验证知点 $\left(\dfrac{1}{6}, -\dfrac{5}{3}\right)$ 满足：
+    \[
+    x_2^* = -\frac{5}{3} \le \frac{1}{6} = x_1^*, \quad x_1^* + x_2^* = -\frac{3}{2} \le 4, \quad x_1^* = \frac{1}{6} \le 3
+    \]
+    该驻点完全位于可行域内部。因此，当椭圆等值线缩小至中心点时即在可行域内取得极小值，最优解为 $\bm{x}^* = \left[\dfrac{1}{6}, -\dfrac{5}{3}\right]^T$，极小值为：
+    \[
+    f\left(\frac{1}{6}, -\frac{5}{3}\right) = 4\left(\frac{1}{36}\right) + 2\left(\frac{1}{6}\right)\left(-\frac{5}{3}\right) + \frac{25}{9} + 2\left(\frac{1}{6}\right) + 3\left(-\frac{5}{3}\right) = -\frac{7}{3}
+    \]
+\end{enumerate}
+
+\begin{center}
+\begin{tikzpicture}[scale=1.0]
+    \draw[->] (-3,0) -- (4.5,0) node[right] {$x_1$};
+    \draw[->] (0,-4) -- (0,3.5) node[above] {$x_2$};
+
+    % 可行域局部示意
+    \fill[gray!20] (-2,-2) -- (2,2) -- (3,1) -- (3,-3.5) -- (-2,-3.5) -- cycle;
+    \draw[thick] (-2,-2) -- (2,2) node[midway, above left] {$x_2=x_1$};
+    \draw[thick] (1,3) -- (4,0) node[midway, above right] {$x_1+x_2=4$};
+    \draw[thick] (3,-3.5) -- (3,3) node[above] {$x_1=3$};
+
+    % 目标函数等值线（同心椭圆，中心为驻点）
+    \begin{scope}[rotate around={17:(0.167,-1.667)}]
+        \draw[blue] (0.167,-1.667) ellipse ({1.3} and {0.65});
+        \draw[blue] (0.167,-1.667) ellipse ({0.85} and {0.42});
+        \draw[blue] (0.167,-1.667) ellipse ({0.42} and {0.21});
+    \end{scope}
+
+    \fill[red] (0.167,-1.667) circle (2pt) node[below right] {$\bm{x}^*\left(\frac{1}{6},-\frac{5}{3}\right)$};
+\end{tikzpicture}
+\end{center}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.8}
+\textbf{题目：} 画出下列函数的等值线，并指出函数数值为正和负的区域；如有极小点，则指出它的坐标。
+
+\subsection*{(1) $f(x_1, x_2) = 3x_1^2 + 3x_2^2 - 6x_1 + 5$}
+\paragraph{分析：}
+对函数配方：
+\[
+f(x_1, x_2) = 3(x_1^2 - 2x_1 + 1) + 3x_2^2 + 2 = 3(x_1 - 1)^2 + 3x_2^2 + 2
+\]
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{等值线方程：} $3(x_1 - 1)^2 + 3x_2^2 + 2 = c \implies (x_1 - 1)^2 + x_2^2 = \dfrac{c - 2}{3}$。
+    \begin{itemize}
+        \item 当 $c > 2$ 时，等值线为以 $(1, 0)$ 为圆心、半径为 $\sqrt{\dfrac{c - 2}{3}}$ 的同心圆族；
+        \item 当 $c = 2$ 时，退化为单个点 $(1, 0)$；
+        \item 当 $c < 2$ 时，无实数解图形。
+    \end{itemize}
+    \item \textbf{正负区域：}
+    由于对任意 $(x_1, x_2) \in \mathbb{R}^2$，恒有 $f(x_1, x_2) \ge 2 > 0$。因此：
+    \begin{itemize}
+        \item 正值区（$f > 0$）：整个二维平面 $\mathbb{R}^2$；
+        \item 负值区（$f < 0$）：空集 $\emptyset$。
+    \end{itemize}
+    \item \textbf{极小点：}
+    存在唯一全局极小点，坐标为 $(1, 0)$，极小值为 $f(1, 0) = 2$。
+\end{itemize}
+
+\begin{center}
+\begin{tikzpicture}[scale=0.8]
+    \draw[->] (-1.5,0) -- (3.5,0) node[right] {$x_1$};
+    \draw[->] (0,-2.5) -- (0,2.5) node[above] {$x_2$};
+    \fill[red] (1,0) circle (2pt) node[below right] {极小点 $(1,0)$};
+    \draw[blue] (1,0) circle (0.6) node[above right=0.4cm and 0.2cm] {$c=3$};
+    \draw[blue] (1,0) circle (1.15) node[above right=0.8cm and 0.5cm] {$c=6$};
+    \draw[blue] (1,0) circle (1.63) node[above right=1.2cm and 0.8cm] {$c=10$};
+    \node at (2.5, -1.8) [text=black!70] {全平面 $f > 0$};
+\end{tikzpicture}
+\end{center}
+
+\subsection*{(2) $f(x_1, x_2) = x_1 x_2$}
+\paragraph{分析：}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{等值线方程：} $x_1 x_2 = c$。
+    \begin{itemize}
+        \item 当 $c > 0$ 时，为位于第一、第三象限的双曲线，渐近线为坐标轴；
+        \item 当 $c < 0$ 时，为位于第二、第四象限的双曲线，渐近线为坐标轴；
+        \item 当 $c = 0$ 时，退化为两条坐标轴直线：$x_1 = 0$ 和 $x_2 = 0$。
+    \end{itemize}
+    \item \textbf{正负区域：}
+    \begin{itemize}
+        \item 正值区（$f > 0$）：第一、第三象限，即 $\{ (x_1, x_2) \mid x_1 x_2 > 0 \}$；
+        \item 负值区（$f < 0$）：第二、第四象限，即 $\{ (x_1, x_2) \mid x_1 x_2 < 0 \}$；
+        \item 零值线（$f = 0$）：坐标轴 $\{ (x_1, x_2) \mid x_1 = 0 \text{ 或 } x_2 = 0 \}$。
+    \end{itemize}
+    \item \textbf{极小点：}
+    一阶驻点由 $\nabla f = (x_2, x_1)^T = \bm{0}$ 给出，即 $(0, 0)$。
+    其 Hessian 矩阵为 $\bm{H} = \begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}$，特征值为 $\pm 1$，为不定矩阵。故原点 $(0, 0)$ 是鞍点。
+    又因为当 $x_1 = t, x_2 = -t$ 且 $t \to \infty$ 时，$f(t, -t) = -t^2 \to -\infty$，函数在全空间无下界。
+    因此，该函数\textbf{不存在极小点}。
+\end{itemize}
+
+\begin{center}
+\begin{tikzpicture}[scale=0.7]
+    \draw[->] (-3,0) -- (3,0) node[right] {$x_1$};
+    \draw[->] (0,-3) -- (0,3) node[above] {$x_2$};
+    % c > 0
+    \draw[domain=0.35:2.8, smooth, variable=\x, blue] plot ({\x}, {1/\x});
+    \draw[domain=-2.8:-0.35, smooth, variable=\x, blue] plot ({\x}, {1/\x});
+    \node[blue] at (2, 1.2) {$c=1$};
+    % c < 0
+    \draw[domain=0.35:2.8, smooth, variable=\x, red] plot ({\x}, {-1/\x});
+    \draw[domain=-2.8:-0.35, smooth, variable=\x, red] plot ({\x}, {-1/\x});
+    \node[red] at (2, -1.2) {$c=-1$};
+    
+    \node at (1.5, 2.2) {$f>0$};
+    \node at (-1.5, -2.2) {$f>0$};
+    \node at (-1.5, 2.2) {$f<0$};
+    \node at (1.5, -2.2) {$f<0$};
+    \fill (0,0) circle (2pt) node[below right] {鞍点 $(0,0)$};
+\end{tikzpicture}
+\end{center}
+
+\subsection*{(3) $f(x_1, x_2) = x_1^2 - x_2^2$}
+\paragraph{分析：}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{等值线方程：} $x_1^2 - x_2^2 = c$。
+    \begin{itemize}
+        \item 当 $c > 0$ 时，为焦点在 $x_1$ 轴上的等轴双曲线，渐近线为 $x_2 = \pm x_1$；
+        \item 当 $c < 0$ 时，为焦点在 $x_2$ 轴上的等轴双曲线，渐近线为 $x_2 = \pm x_1$；
+        \item 当 $c = 0$ 时，退化为两条相互正交的相交直线：$x_2 = x_1$ 和 $x_2 = -x_1$。
+    \end{itemize}
+    \item \textbf{正负区域：}
+    \begin{itemize}
+        \item 正值区（$f > 0$）：$|x_1| > |x_2|$，即包含 $x_1$ 轴的左右对顶角区域；
+        \item 负值区（$f < 0$）：$|x_1| < |x_2|$，即包含 $x_2$ 轴的上下对顶角区域；
+        \item 零值线（$f = 0$）：两条渐近线 $x_2 = \pm x_1$。
+    \end{itemize}
+    \item \textbf{极小点：}
+    驻点由 $\nabla f = (2x_1, -2x_2)^T = \bm{0}$ 解得为 $(0, 0)$。
+    Hessian 矩阵为 $\bm{H} = \begin{bmatrix} 2 & 0 \\ 0 & -2 \end{bmatrix}$，特征值为 $2$ 和 $-2$，为不定矩阵，故 $(0, 0)$ 为鞍点。
+    沿 $x_2$ 轴方向（$x_1 = 0$），$f(0, x_2) = -x_2^2 \to -\infty$，函数无下界。
+    因此，该函数\textbf{不存在极小点}。
+\end{itemize}
+
+\begin{center}
+\begin{tikzpicture}[scale=0.7]
+    \draw[->] (-3,0) -- (3,0) node[right] {$x_1$};
+    \draw[->] (0,-3) -- (0,3) node[above] {$x_2$};
+    \draw[dashed, gray] (-2.5,-2.5) -- (2.5,2.5) node[right] {$x_2=x_1$};
+    \draw[dashed, gray] (-2.5,2.5) -- (2.5,-2.5) node[right] {$x_2=-x_1$};
+    % c > 0
+    \draw[domain=-1.3:1.3, smooth, variable=\t, blue] plot ({sqrt(1 + \t*\t)}, {\t});
+    \draw[domain=-1.3:1.3, smooth, variable=\t, blue] plot ({-sqrt(1 + \t*\t)}, {\t});
+    \node[blue] at (1.8, 0.5) {$c=1$};
+    % c < 0
+    \draw[domain=-1.3:1.3, smooth, variable=\t, red] plot ({\t}, {sqrt(1 + \t*\t)});
+    \draw[domain=-1.3:1.3, smooth, variable=\t, red] plot ({\t}, {-sqrt(1 + \t*\t)});
+    \node[red] at (0.6, 1.8) {$c=-1$};
+    
+    \node at (2.2, 0) {$f>0$};
+    \node at (-2.2, 0) {$f>0$};
+    \node at (0, 2.2) {$f<0$};
+    \node at (0, -2.2) {$f<0$};
+    \fill (0,0) circle (2pt) node[below=2pt] {鞍点 $(0,0)$};
+\end{tikzpicture}
+\end{center}
+
+\subsection*{(4) $f(x_1, x_2) = x_1 + x_2^2$}
+\paragraph{解：}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{等值线方程：} 
+    $x_1 + x_2^2 = c \implies x_1 = c - x_2^2$。
+    这是一族对称轴为 $x_1$ 轴、顶点在 $(c, 0)$、开口向左的抛物线族。
+    \item \textbf{正负区域：}
+    \begin{itemize}
+        \item 正值区（$f > 0$）：$x_1 > -x_2^2$，即零值线抛物线 $x_1 = -x_2^2$ 右侧区域；
+        \item 负值区（$f < 0$）：$x_1 < -x_2^2$，即零值线抛物线 $x_1 = -x_2^2$ 左侧（凹向内部）区域；
+        \item 零值线（$f = 0$）：抛物线 $x_1 = -x_2^2$。
+    \end{itemize}
+    \item \textbf{极小点：}
+    梯度为 $\nabla f(x_1, x_2) = [1, 2x_2]^T$。因为 $\dfrac{\partial f}{\partial x_1} = 1 \neq 0$ 恒成立，所以函数不存在驻点。
+    又当 $x_1 \to -\infty$ 时，$f(x_1, x_2) \to -\infty$，函数在 $\mathbb{R}^2$ 上无下界。因此，该函数\textbf{不存在极小点}。
+\end{itemize}
+
+\begin{center}
+\begin{tikzpicture}[scale=0.75]
+    \draw[->] (-3.5,0) -- (3,0) node[right] {$x_1$};
+    \draw[->] (0,-2.5) -- (0,2.5) node[above] {$x_2$};
+    % c = 0
+    \draw[domain=-2:2, smooth, variable=\y, thick, black] plot ({-\y*\y}, {\y}) node[below left] {$c=0$};
+    % c = 1
+    \draw[domain=-2:2, smooth, variable=\y, blue] plot ({1 - \y*\y}, {\y}) node[above right] {$c=1$};
+    % c = -1
+    \draw[domain=-1.5:1.5, smooth, variable=\y, red] plot ({-1 - \y*\y}, {\y}) node[left] {$c=-1$};
+    \node at (1.5, 0.5) {$f>0$};
+    \node at (-2.5, 0.5) {$f<0$};
+\end{tikzpicture}
+\end{center}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.9}
+\textbf{题目：} 求下列函数在指定点的梯度。
+
+\paragraph{(1) $f(x_1, x_2) = 3x_1^2 - 4x_1 x_2 + x_2^2$，点 $\bm{x} = [0, 1]^T$}
+求一阶偏导数：
+\[
+\frac{\partial f}{\partial x_1} = 6x_1 - 4x_2, \quad \frac{\partial f}{\partial x_2} = -4x_1 + 2x_2
+\]
+在点 $\bm{x} = [0, 1]^T$ 处代入 $x_1 = 0, x_2 = 1$：
+\[
+\frac{\partial f}{\partial x_1}(0, 1) = -4, \quad \frac{\partial f}{\partial x_2}(0, 1) = 2
+\]
+故梯度为：
+\[
+\nabla f([0, 1]^T) = \begin{bmatrix} -4 \\ 2 \end{bmatrix}
+\]
+
+\paragraph{(2) $f(x_1, x_2, x_3) = x_1^2 + x_2^2 + x_3^2 - 2x_1 x_2 - 2x_2 x_3 + 3x_2$，点 $\bm{x} = [1, -1, 3]^T$}
+求一阶偏导数：
+\[
+\frac{\partial f}{\partial x_1} = 2x_1 - 2x_2, \quad \frac{\partial f}{\partial x_2} = 2x_2 - 2x_1 - 2x_3 + 3, \quad \frac{\partial f}{\partial x_3} = 2x_3 - 2x_2
+\]
+在点 $\bm{x} = [1, -1, 3]^T$ 处代入 $x_1 = 1, x_2 = -1, x_3 = 3$：
+\[
+\begin{aligned}
+\frac{\partial f}{\partial x_1} &= 2(1) - 2(-1) = 4 \\
+\frac{\partial f}{\partial x_2} &= 2(-1) - 2(1) - 2(3) + 3 = -2 - 2 - 6 + 3 = -7 \\
+\frac{\partial f}{\partial x_3} &= 2(3) - 2(-1) = 6 + 2 = 8
+\end{aligned}
+\]
+故梯度为：
+\[
+\nabla f([1, -1, 3]^T) = \begin{bmatrix} 4 \\ -7 \\ 8 \end{bmatrix}
+\]
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.10}
+\textbf{题目：} 求下列函数的梯度和 Hesse 矩阵。
+
+\paragraph{(1) $f(\bm{x}) = x_1^2 + 2x_2^2 + 3x_3^2 - 4x_1 x_3$}
+\begin{itemize}
+    \item \textbf{梯度 $\nabla f(\bm{x})$：}
+    \[
+    \nabla f(\bm{x}) = \begin{bmatrix} 
+    \dfrac{\partial f}{\partial x_1} \\[2mm] \dfrac{\partial f}{\partial x_2} \\[2mm] \dfrac{\partial f}{\partial x_3} 
+    \end{bmatrix} = \begin{bmatrix} 2x_1 - 4x_3 \\ 4x_2 \\ -4x_1 + 6x_3 \end{bmatrix}
+    \]
+    \item \textbf{Hesse 矩阵 $\nabla^2 f(\bm{x})$：}
+    \[
+    \nabla^2 f(\bm{x}) = \begin{bmatrix}
+    \dfrac{\partial^2 f}{\partial x_1^2} & \dfrac{\partial^2 f}{\partial x_1 \partial x_2} & \dfrac{\partial^2 f}{\partial x_1 \partial x_3} \\[2mm]
+    \dfrac{\partial^2 f}{\partial x_2 \partial x_1} & \dfrac{\partial^2 f}{\partial x_2^2} & \dfrac{\partial^2 f}{\partial x_2 \partial x_3} \\[2mm]
+    \dfrac{\partial^2 f}{\partial x_3 \partial x_1} & \dfrac{\partial^2 f}{\partial x_3 \partial x_2} & \dfrac{\partial^2 f}{\partial x_3^2}
+    \end{bmatrix} = \begin{bmatrix}
+    2 & 0 & -4 \\
+    0 & 4 & 0 \\
+    -4 & 0 & 6
+    \end{bmatrix}
+    \]
+\end{itemize}
+
+\paragraph{(2) $f(\bm{x}) = 3x_1 x_2^2 + \mathrm{e}^{x_1 x_2}$}
+\begin{itemize}
+    \item \textbf{梯度 $\nabla f(\bm{x})$：}
+    \[
+    \nabla f(\bm{x}) = \begin{bmatrix}
+    \dfrac{\partial f}{\partial x_1} \\[2mm] \dfrac{\partial f}{\partial x_2}
+    \end{bmatrix} = \begin{bmatrix}
+    3x_2^2 + x_2 \mathrm{e}^{x_1 x_2} \\
+    6x_1 x_2 + x_1 \mathrm{e}^{x_1 x_2}
+    \end{bmatrix}
+    \]
+    \item \textbf{Hesse 矩阵 $\nabla^2 f(\bm{x})$：}
+    \[
+    \begin{aligned}
+    \frac{\partial^2 f}{\partial x_1^2} &= x_2^2 \mathrm{e}^{x_1 x_2} \\
+    \frac{\partial^2 f}{\partial x_1 \partial x_2} = \frac{\partial^2 f}{\partial x_2 \partial x_1} &= 6x_2 + \mathrm{e}^{x_1 x_2} + x_1 x_2 \mathrm{e}^{x_1 x_2} = 6x_2 + (1 + x_1 x_2)\mathrm{e}^{x_1 x_2} \\
+    \frac{\partial^2 f}{\partial x_2^2} &= 6x_1 + x_1^2 \mathrm{e}^{x_1 x_2}
+    \end{aligned}
+    \]
+    故：
+    \[
+    \nabla^2 f(\bm{x}) = \begin{bmatrix}
+    x_2^2 \mathrm{e}^{x_1 x_2} & 6x_2 + (1 + x_1 x_2)\mathrm{e}^{x_1 x_2} \\
+    6x_2 + (1 + x_1 x_2)\mathrm{e}^{x_1 x_2} & 6x_1 + x_1^2 \mathrm{e}^{x_1 x_2}
+    \end{bmatrix}
+    \]
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.11}
+\textbf{题目：} 设 $\bm{Q}$ 是 $n \times n$ 对称矩阵，$\bm{x}$ 是 $n$ 维向量，试证：
+\begin{enumerate}[label=(\arabic*)]
+    \item $\nabla(\bm{x}^T \bm{x}) = 2\bm{x}$；
+    \item $\nabla(\bm{x}^T \bm{Q} \bm{x}) = 2\bm{Q}\bm{x}$；
+    \item $\nabla \bm{x} = \bm{I}$（单位矩阵）；
+    \item $\nabla(\bm{A}\bm{x}) = \bm{A}^T$。
+\end{enumerate}
+
+\begin{proof}
+按向量导数的分量定义进行严密证明：
+\begin{enumerate}[label=(\arabic*)]
+    \item 设标量函数 $f(\bm{x}) = \bm{x}^T \bm{x} = \sum_{j=1}^n x_j^2$。对任意分量 $x_i$（$i = 1, \dots, n$）求偏导：
+    \[
+    \frac{\partial f}{\partial x_i} = \frac{\partial}{\partial x_i}\left(x_i^2\right) = 2x_i
+    \]
+    故由梯度定义，$\nabla (\bm{x}^T \bm{x}) = \left[ \dfrac{\partial f}{\partial x_1}, \dots, \dfrac{\partial f}{\partial x_n} \right]^T = [2x_1, \dots, 2x_n]^T = 2\bm{x}$。
+
+    \item 设二次型函数 $f(\bm{x}) = \bm{x}^T \bm{Q} \bm{x} = \sum_{j=1}^n \sum_{k=1}^n q_{jk} x_j x_k$。对 $x_i$ 求偏导：
+    \[
+    \frac{\partial f}{\partial x_i} = \sum_{k=1}^n q_{ik} x_k + \sum_{j=1}^n q_{ji} x_j
+    \]
+    由于矩阵 $\bm{Q}$ 是对称矩阵，即 $q_{ji} = q_{ij}$，因此两项求和完全等价：
+    \[
+    \frac{\partial f}{\partial x_i} = \sum_{k=1}^n q_{ik} x_k + \sum_{j=1}^n q_{ij} x_j = 2\sum_{k=1}^n q_{ik} x_k = 2 (\bm{Q}\bm{x})_i
+    \]
+    故 $\nabla(\bm{x}^T \bm{Q}\bm{x}) = 2\bm{Q}\bm{x}$。
+
+    \item 向量映射 $\bm{g}(\bm{x}) = \bm{x} = [x_1, x_2, \dots, x_n]^T$。根据最优化文献约定，向量值函数的梯度为其各个分量函数梯度的列向量组合：
+    \[
+    \nabla \bm{x} = \left[ \nabla x_1, \nabla x_2, \dots, \nabla x_n \right]
+    \]
+    而 $\nabla x_j = \bm{e}_j$（第 $j$ 个标准单位基向量），故：
+    \[
+    \nabla \bm{x} = [\bm{e}_1, \bm{e}_2, \dots, \bm{e}_n] = \bm{I}
+    \]
+
+    \item 设 $\bm{y} = \bm{A}\bm{x} \in \mathbb{R}^m$，其中 $\bm{A} \in \mathbb{R}^{m \times n}$。记矩阵 $\bm{A}$ 的第 $i$ 个行向量为 $\bm{a}_i^T$，则第 $i$ 个分量函数为：
+    \[
+    y_i = \bm{a}_i^T \bm{x} = \sum_{k=1}^n a_{ik} x_k \implies \nabla y_i = \bm{a}_i = \begin{bmatrix} a_{i1} \\ a_{i2} \\ \vdots \\ a_{in} \end{bmatrix}
+    \]
+    由定义，向量值函数的梯度算子为：
+    \[
+    \nabla (\bm{A}\bm{x}) = [\nabla y_1, \nabla y_2, \dots, \nabla y_m] = [\bm{a}_1, \bm{a}_2, \dots, \bm{a}_m] = \bm{A}^T
+    \]
+\end{enumerate}
+\end{proof}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.12}
+\textbf{题目：} 已知向量值函数 $\bm{g}: \mathbb{R}^2 \to \mathbb{R}^3$ 的表达式为
+\[
+\bm{g}(x_1, x_2) = \begin{bmatrix} x_1^2 + 2x_2^2 \\ 3x_1 \\ 1 - 5x_2 \end{bmatrix}
+\]
+试求 $\nabla \bm{g}(x_1, x_2)$。
+
+\paragraph{解：}
+由习题 1.11 的符号约定，向量值函数的梯度定义为各分量标量函数梯度构成的列块矩阵（即 Jacobi 矩阵的转置）：
+\[
+\bm{g}_1(x_1, x_2) = x_1^2 + 2x_2^2 \implies \nabla \bm{g}_1 = \begin{bmatrix} 2x_1 \\ 4x_2 \end{bmatrix}
+\]
+\[
+\bm{g}_2(x_1, x_2) = 3x_1 \implies \nabla \bm{g}_2 = \begin{bmatrix} 3 \\ 0 \end{bmatrix}
+\]
+\[
+\bm{g}_3(x_1, x_2) = 1 - 5x_2 \implies \nabla \bm{g}_3 = \begin{bmatrix} 0 \\ -5 \end{bmatrix}
+\]
+因此：
+\[
+\nabla \bm{g}(x_1, x_2) = \left[ \nabla \bm{g}_1, \nabla \bm{g}_2, \nabla \bm{g}_3 \right] = \begin{bmatrix}
+2x_1 & 3 & 0 \\
+4x_2 & 0 & -5
+\end{bmatrix} \in \mathbb{R}^{2 \times 3}
+\]
+（注：若按微积分中 Jacobi 矩阵记号，则 $\bm{J}_{\bm{g}}(x_1, x_2) = (\nabla \bm{g})^T = \begin{bmatrix} 2x_1 & 4x_2 \\ 3 & 0 \\ 0 & -5 \end{bmatrix}$）。
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.13}
+\textbf{题目：} 试用链导规则 (1.28) 推导公式 (1.26) 和 (1.27)。
+
+\paragraph{推导：}
+设一维搜索函数为 $\phi(t) = f(\bm{x}_0 + t\bm{p})$，其中 $t \in \mathbb{R}$ 为标量，令向量值函数 $\bm{u}(t) = \bm{x}_0 + t\bm{p}: \mathbb{R} \to \mathbb{R}^n$，标量函数 $f(\bm{u}): \mathbb{R}^n \to \mathbb{R}$。
+
+\begin{enumerate}
+    \item \textbf{推导公式 (1.26)：}  
+    $\bm{u}(t)$ 的导数向量为 $\nabla \bm{u}(t) = \bm{p}^T$。根据复合函数求导的链式法则：
+    \[
+    \phi'(t) = \nabla \bm{u}(t) \nabla f(\bm{u}) = \bm{p}^T \nabla f(\bm{x}_0 + t\bm{p}) = \nabla f(\bm{x}_0 + t\bm{p})^T \bm{p} \tag{1.26}
+    \]
+    \item \textbf{推导公式 (1.27)：}  
+    将一阶导数展开为分量求和形式 $\phi'(t) = \sum_{i=1}^n p_i \dfrac{\partial f(\bm{x}_0 + t\bm{p})}{\partial x_i}$。两端继续对 $t$ 求导：
+    \[
+    \phi''(t) = \sum_{i=1}^n p_i \frac{\mathrm{d}}{\mathrm{d}t} \left[ \frac{\partial f(\bm{x}_0 + t\bm{p})}{\partial x_i} \right] = \sum_{i=1}^n p_i \left( \sum_{j=1}^n \frac{\partial^2 f(\bm{x}_0 + t\bm{p})}{\partial x_i \partial x_j} p_j \right) = \bm{p}^T \nabla^2 f(\bm{x}_0 + t\bm{p}) \bm{p} \tag{1.27}
+    \]
+\end{enumerate}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.14}
+\textbf{题目：} 把函数 $f(x, y) = \sin x \sin y$ 在点 $\left[\dfrac{\pi}{4}, \dfrac{\pi}{4}\right]^T$ 的邻域内展开成 Taylor 级数，直到二次项为止。
+
+\paragraph{解：}
+设展开中心为 $(x_0, y_0) = \left(\dfrac{\pi}{4}, \dfrac{\pi}{4}\right)$。
+计算各阶偏导数及在展开中心处的值：
+\begin{itemize}
+    \item 函数值：
+    \[
+    f\left(\frac{\pi}{4}, \frac{\pi}{4}\right) = \sin\frac{\pi}{4}\sin\frac{\pi}{4} = \frac{\sqrt{2}}{2}\cdot\frac{\sqrt{2}}{2} = \frac{1}{2}
+    \]
+    \item 一阶偏导数：
+    \[
+    f_x = \cos x \sin y \implies f_x\left(\frac{\pi}{4}, \frac{\pi}{4}\right) = \frac{\sqrt{2}}{2}\cdot\frac{\sqrt{2}}{2} = \frac{1}{2}
+    \]
+    \[
+    f_y = \sin x \cos y \implies f_y\left(\frac{\pi}{4}, \frac{\pi}{4}\right) = \frac{\sqrt{2}}{2}\cdot\frac{\sqrt{2}}{2} = \frac{1}{2}
+    \]
+    \item 二阶偏导数：
+    \[
+    f_{xx} = -\sin x \sin y \implies f_{xx}\left(\frac{\pi}{4}, \frac{\pi}{4}\right) = -\frac{1}{2}
+    \]
+    \[
+    f_{xy} = \cos x \cos y \implies f_{xy}\left(\frac{\pi}{4}, \frac{\pi}{4}\right) = \frac{1}{2}
+    \]
+    \[
+    f_{yy} = -\sin x \sin y \implies f_{yy}\left(\frac{\pi}{4}, \frac{\pi}{4}\right) = -\frac{1}{2}
+    \]
+\end{itemize}
+多元 Taylor 二次展开式为：
+\[
+\begin{aligned}
+f(x, y) = &\; f(x_0, y_0) + f_x(x_0, y_0)\left(x - \frac{\pi}{4}\right) + f_y(x_0, y_0)\left(y - \frac{\pi}{4}\right) \\
+&+ \frac{1}{2}\left[ f_{xx}(x_0, y_0)\left(x - \frac{\pi}{4}\right)^2 + 2f_{xy}(x_0, y_0)\left(x - \frac{\pi}{4}\right)\left(y - \frac{\pi}{4}\right) + f_{yy}(x_0, y_0)\left(y - \frac{\pi}{4}\right)^2 \right] + R_2
+\end{aligned}
+\]
+代入具体导数值：
+\[
+f(x, y) = \frac{1}{2} + \frac{1}{2}\left(x - \frac{\pi}{4}\right) + \frac{1}{2}\left(y - \frac{\pi}{4}\right) - \frac{1}{4}\left(x - \frac{\pi}{4}\right)^2 + \frac{1}{2}\left(x - \frac{\pi}{4}\right)\left(y - \frac{\pi}{4}\right) - \frac{1}{4}\left(y - \frac{\pi}{4}\right)^2 + R_2
+\]
+展开并合并同类项：
+\[
+-\frac{1}{4}\left(x - \frac{\pi}{4}\right)^2 + \frac{1}{2}\left(x - \frac{\pi}{4}\right)\left(y - \frac{\pi}{4}\right) - \frac{1}{4}\left(y - \frac{\pi}{4}\right)^2 = -\frac{1}{4}(x - y)^2 = -\frac{1}{4}x^2 + \frac{1}{2}xy - \frac{1}{4}y^2
+\]
+\[
+\frac{1}{2} + \frac{1}{2}\left(x - \frac{\pi}{4}\right) + \frac{1}{2}\left(y - \frac{\pi}{4}\right) = \frac{1}{2}x + \frac{1}{2}y + \frac{1}{2} - \frac{\pi}{4}
+\]
+整理为最终多项式形式：
+\[
+f(x, y) = -\frac{1}{4}x^2 + \frac{1}{2}xy - \frac{1}{4}y^2 + \frac{1}{2}x + \frac{1}{2}y + \frac{1}{2} - \frac{\pi}{4} + o\left(\left(x - \frac{\pi}{4}\right)^2 + \left(y - \frac{\pi}{4}\right)^2\right)
+\]
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.15}
+\textbf{题目：} 设 $S$ 是 $\mathbb{R}^n$ 中的非空集。试证：$S$ 是凸集的充要条件是，对于每个 $k \ge 2$，当 $\bm{x}_1, \bm{x}_2, \cdots, \bm{x}_k \in S$ 时就有 $\sum_{i=1}^k \alpha_i \bm{x}_i \in S$，其中 $\alpha_1, \alpha_2, \cdots, \alpha_k$ 是满足 $\sum_{i=1}^k \alpha_i = 1$ 的任意 $k$ 个非负实数。
+
+\begin{proof}
+\textbf{充分性：}
+若对任意 $k \ge 2$ 条件均成立，取 $k = 2$，即对任意 $\bm{x}_1, \bm{x}_2 \in S$ 及任意满足 $\alpha_1 + \alpha_2 = 1, \alpha_1, \alpha_2 \ge 0$ 的实数，均有 $\alpha_1 \bm{x}_1 + \alpha_2 \bm{x}_2 \in S$。这正是凸集的原始定义，故 $S$ 是凸集。
+
+\textbf{必要性：}
+已知 $S$ 是凸集，对凸组合项数 $k$ 采用数学归纳法：
+\begin{enumerate}
+    \item 当 $k = 2$ 时，由凸集定义，命题显然成立。
+    \item 归纳假设：假设当 $k = m$（$m \ge 2$）时命题成立，即任意 $m$ 个元素的凸组合均属于 $S$。
+    \item 考察 $k = m + 1$ 的情形：设 $\bm{x}_1, \dots, \bm{x}_{m+1} \in S$，$\sum_{i=1}^{m+1} \alpha_i = 1$，且 $\alpha_i \ge 0$。
+    \begin{itemize}
+        \item 若 $\alpha_{m+1} = 1$，则 $\alpha_1 = \dots = \alpha_m = 0$，此时 $\sum_{i=1}^{m+1}\alpha_i \bm{x}_i = \bm{x}_{m+1} \in S$ 显然成立。
+        \item 若 $\alpha_{m+1} < 1$，令 $\lambda = \sum_{i=1}^m \alpha_i = 1 - \alpha_{m+1} > 0$。将和式重组为：
+        \[
+        \sum_{i=1}^{m+1} \alpha_i \bm{x}_i = \lambda \left( \sum_{i=1}^m \frac{\alpha_i}{\lambda} \bm{x}_i \right) + \alpha_{m+1} \bm{x}_{m+1}
+        \]
+        注意到 $\sum_{i=1}^m \dfrac{\alpha_i}{\lambda} = \dfrac{1}{\lambda} \sum_{i=1}^m \alpha_i = 1$，且 $\dfrac{\alpha_i}{\lambda} \ge 0$。由归纳假设：
+        \[
+        \bm{y} = \sum_{i=1}^m \frac{\alpha_i}{\lambda} \bm{x}_i \in S
+        \]
+        因此：
+        \[
+        \sum_{i=1}^{m+1} \alpha_i \bm{x}_i = \lambda \bm{y} + \alpha_{m+1} \bm{x}_{m+1}
+        \]
+        因为 $\bm{y} \in S, \bm{x}_{m+1} \in S$，且 $\lambda + \alpha_{m+1} = 1$（$\lambda, \alpha_{m+1} \ge 0$），由 $k=2$ 时凸集的定义可知，该二元凸组合必然属于 $S$。
+    \end{itemize}
+    综上可知，对 $k = m+1$ 命题亦成立。
+\end{enumerate}
+由数学归纳法，充要性得证。
+\end{proof}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.16}
+\textbf{题目：} 设 $S_1$ 和 $S_2$ 都是 $\mathbb{R}^n$ 中的凸集。试证：对于任意给定的常数 $\lambda_1$ 和 $\lambda_2$，集合
+\[
+S = \{ \bm{z} \mid \bm{z} = \lambda_1 \bm{x}_1 + \lambda_2 \bm{x}_2,\; \bm{x}_1 \in S_1,\; \bm{x}_2 \in S_2 \}
+\]
+是凸集。
+
+\begin{proof}
+任取 $\bm{z}^{(a)}, \bm{z}^{(b)} \in S$，以及任意标量 $\alpha \in [0, 1]$。
+由集合 $S$ 的定义，存在 $\bm{x}_1^{(a)}, \bm{x}_1^{(b)} \in S_1$ 以及 $\bm{x}_2^{(a)}, \bm{x}_2^{(b)} \in S_2$，满足：
+\[
+\bm{z}^{(a)} = \lambda_1 \bm{x}_1^{(a)} + \lambda_2 \bm{x}_2^{(a)}, \quad \bm{z}^{(b)} = \lambda_1 \bm{x}_1^{(b)} + \lambda_2 \bm{x}_2^{(b)}
+\]
+考虑它们的凸组合 $\bm{z} = \alpha \bm{z}^{(a)} + (1 - \alpha) \bm{z}^{(b)}$：
+\[
+\begin{aligned}
+\bm{z} &= \alpha \left( \lambda_1 \bm{x}_1^{(a)} + \lambda_2 \bm{x}_2^{(a)} \right) + (1 - \alpha) \left( \lambda_1 \bm{x}_1^{(b)} + \lambda_2 \bm{x}_2^{(b)} \right) \\
+&= \lambda_1 \left[ \alpha \bm{x}_1^{(a)} + (1 - \alpha) \bm{x}_1^{(b)} \right] + \lambda_2 \left[ \alpha \bm{x}_2^{(a)} + (1 - \alpha) \bm{x}_2^{(b)} \right]
+\end{aligned}
+\]
+记 $\bm{x}_1 = \alpha \bm{x}_1^{(a)} + (1 - \alpha) \bm{x}_1^{(b)}$，$\bm{x}_2 = \alpha \bm{x}_2^{(a)} + (1 - \alpha) \bm{x}_2^{(b)}$。
+因为 $S_1$ 和 $S_2$ 均是凸集，故：
+\[
+\bm{x}_1 \in S_1, \quad \bm{x}_2 \in S_2
+\]
+于是有 $\bm{z} = \lambda_1 \bm{x}_1 + \lambda_2 \bm{x}_2 \in S$。
+由凸集定义，集合 $S$ 必为凸集。
+\end{proof}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.17}
+\textbf{题目：} 试证明 $x^2$ 是严格凸函数。
+
+\begin{proof}
+\textbf{证法一（二阶导数判定法）：}
+定义域 $\mathbb{R}$ 显然为凸集。设 $f(x) = x^2$，其一阶导数与二阶导数分别为：
+\[
+f'(x) = 2x, \quad f''(x) = 2
+\]
+对任意 $x \in \mathbb{R}$，恒有 $f''(x) = 2 > 0$。由一元函数严格凸性的二阶充分条件可知，$f(x) = x^2$ 在 $\mathbb{R}$ 上是严格凸函数。
+
+\textbf{证法二（严格凸性原始定义法）：}
+对任意 $x_1 \neq x_2 \in \mathbb{R}$，以及任意 $\alpha \in (0, 1)$：
+\[
+\begin{aligned}
+\alpha f(x_1) + (1 - \alpha) f(x_2) - f(\alpha x_1 + (1 - \alpha) x_2) &= \alpha x_1^2 + (1 - \alpha) x_2^2 - \left[ \alpha^2 x_1^2 + 2\alpha(1 - \alpha) x_1 x_2 + (1 - \alpha)^2 x_2^2 \right] \\
+&= \alpha(1 - \alpha) x_1^2 - 2\alpha(1 - \alpha) x_1 x_2 + \alpha(1 - \alpha) x_2^2 \\
+&= \alpha(1 - \alpha) (x_1 - x_2)^2
+\end{aligned}
+\]
+由于 $\alpha \in (0, 1)$，有 $\alpha(1 - \alpha) > 0$；又因 $x_1 \neq x_2$，有 $(x_1 - x_2)^2 > 0$。
+故差值严格大于零：
+\[
+f(\alpha x_1 + (1 - \alpha) x_2) < \alpha f(x_1) + (1 - \alpha) f(x_2)
+\]
+满足严格凸函数的定义。
+\end{proof}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.18}
+\textbf{题目：} 判别以下函数中哪些是凸函数，哪些是凹函数，哪些是既不凸也不凹的函数。
+
+\paragraph{(1) $f(x_1, x_2) = -x_1^2 - 2x_2^2 + 2x_1 x_2$}
+求 Hesse 矩阵：
+\[
+\nabla^2 f(\bm{x}) = \begin{bmatrix} -2 & 2 \\ 2 & -4 \end{bmatrix}
+\]
+各阶顺序主子式为：
+$\Delta_1 = -2 < 0$，$\Delta_2 = (-2)(-4) - 2^2 = 8 - 4 = 4 > 0$。
+根据负定矩阵判定准则，$\nabla^2 f(\bm{x})$ 处处负定。
+故该函数为\textbf{严格凹函数（凹函数）}。
+
+\paragraph{(2) $f(x_1, x_2) = 2x_1^2 - 4x_1 x_2 + 3x_2^2 - 5x_1 - 6$}
+求 Hesse 矩阵：
+\[
+\nabla^2 f(\bm{x}) = \begin{bmatrix} 4 & -4 \\ -4 & 6 \end{bmatrix}
+\]
+各阶顺序主子式为：
+$\Delta_1 = 4 > 0$，$\Delta_2 = 4 \times 6 - (-4)^2 = 24 - 16 = 8 > 0$。
+根据正定矩阵判定准则，$\nabla^2 f(\bm{x})$ 处处正定。
+故该函数为\textbf{严格凸函数（凸函数）}。
+
+\paragraph{(3) $f(x_1, x_2, x_3) = x_1^2 + 2x_2^2 - 3x_3^2 - 4x_1 x_2$}
+求 Hesse 矩阵：
+\[
+\nabla^2 f(\bm{x}) = \begin{bmatrix}
+2 & -4 & 0 \\
+-4 & 4 & 0 \\
+0 & 0 & -6
+\end{bmatrix}
+\]
+其左上角二阶主子式为 $2 \times 4 - (-4)^2 = 8 - 16 = -8 < 0$。
+矩阵特征值中同时包含正特征值与负特征值，为不定矩阵。
+故该函数\textbf{既不凸也不凹}。
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.19}
+\textbf{题目：} 判别以下最优化问题是否为凸规划。
+
+\paragraph{(1)}
+\[
+\begin{aligned}
+\min \quad & x_1 + 2x_2 \\
+\text{s.t.} \quad & x_1^2 + x_2^2 \le 9 \\
+& x_2 \ge 0
+\end{aligned}
+\]
+\textbf{判别：}
+\begin{itemize}
+    \item 目标函数 $f(\bm{x}) = x_1 + 2x_2$ 是仿射（线性）函数，既是凸函数也是凹函数，因此是凸函数。
+    \item 约束条件 $g_1(\bm{x}) = x_1^2 + x_2^2 - 9 \le 0$，其 Hesse 矩阵为 $2\bm{I} > 0$，为凸函数；线性约束 $g_2(\bm{x}) = -x_2 \le 0$ 为凸函数。凸约束函数的水平集之交（闭半圆盘）是凸集。
+\end{itemize}
+因此，该问题\textbf{是凸规划}。
+
+\paragraph{(2)}
+\[
+\begin{aligned}
+\min \quad & x_1^2 + x_2^2 - 2x_1 + x_1 x_2 + 1 \\
+\text{s.t.} \quad & 3x_1 + 5x_2 - 4 \ge 0 \\
+& 3x_1^2 + x_2^2 - 2x_1 x_2 - 8x_2 + 10 \ge 0 \\
+& x_1, x_2 \ge 0
+\end{aligned}
+\]
+\textbf{判别：}
+\begin{itemize}
+    \item 考察第二个约束函数：令 $h(\bm{x}) = 3x_1^2 + x_2^2 - 2x_1 x_2 - 8x_2 + 10$。其 Hesse 矩阵为 $\begin{bmatrix} 6 & -2 \\ -2 & 2 \end{bmatrix}$，顺序主子式 $6>0, 12-4=8>0$，是严格正定的，故 $h(\bm{x})$ 是严格凸函数。
+    \item 然而，约束条件要求 $h(\bm{x}) \ge 0$（等价于 $-h(\bm{x}) \le 0$）。凸函数大于等于常数的集合表示从全平面中扣除凸集合 $\{ \bm{x} \mid h(\bm{x}) < 0 \}$，这是一个非凸集合（外凸区域）。在可行域内取两点连线，其线段会穿过 $h < 0$ 的挖空区域。
+\end{itemize}
+由于可行集不是凸集，该问题\textbf{不是凸规划}。
+
+\paragraph{(3)}
+\[
+\begin{aligned}
+\min \quad & f(x_1, x_2) = -x_1 \mathrm{e}^{-(x_1 + x_2)} \\
+\text{s.t.} \quad & x_1^2 + x_2^2 \le 1 \\
+& x_1 + 2x_2 \ge 1 \\
+& x_1, x_2 \ge 0
+\end{aligned}
+\]
+\textbf{判别：}
+\begin{itemize}
+    \item 考察目标函数的凸性：对 $f(x_1, x_2)$ 求关于 $x_2$ 的二阶偏导数：
+    \[
+    \frac{\partial f}{\partial x_2} = x_1 \mathrm{e}^{-(x_1+x_2)} \implies \frac{\partial^2 f}{\partial x_2^2} = -x_1 \mathrm{e}^{-(x_1+x_2)}
+    \]
+    在可行域内部（例如满足约束的点 $(0.8, 0.2)$ 处），$x_1 = 0.8 > 0$，则：
+    \[
+    \frac{\partial^2 f}{\partial x_2^2} = -0.8 \mathrm{e}^{-1.0} < 0
+    \]
+    Hesse 矩阵的主对角线元素小于零，说明 Hesse 矩阵不是半正定的，$f$ 在可行域上不是凸函数。
+\end{itemize}
+因此，该问题\textbf{不是凸规划}。
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.20}
+\textbf{题目：} 把下列二次函数写成矩阵形式，并求各函数的极小点及其极小值。
+
+\paragraph{(1) $f(x_1, x_2) = x_1^2 + 2x_2^2 + x_1 x_2$}
+\begin{itemize}
+    \item \textbf{矩阵形式：} 二次函数的标准对称矩阵表达式为 $f(\bm{x}) = \dfrac{1}{2}\bm{x}^T \bm{Q}\bm{x} + \bm{b}^T \bm{x} + c$：
+    \[
+    f(\bm{x}) = \frac{1}{2}\begin{bmatrix} x_1 & x_2 \end{bmatrix} \begin{bmatrix} 2 & 1 \\ 1 & 4 \end{bmatrix} \begin{bmatrix} x_1 \\ x_2 \end{bmatrix}
+    \]
+    其中 $\bm{Q} = \begin{bmatrix} 2 & 1 \\ 1 & 4 \end{bmatrix}$，$\bm{b} = \begin{bmatrix} 0 \\ 0 \end{bmatrix}$，$c = 0$。
+    \item \textbf{极小点与极小值：}
+    由于 $\bm{Q}$ 满足 $\Delta_1 = 2 > 0$，$\det(\bm{Q}) = 8 - 1 = 7 > 0$，故 $\bm{Q}$ 正定，$f$ 是严格凸二次函数。
+    由一阶条件 $\nabla f(\bm{x}) = \bm{Q}\bm{x} = \bm{0}$，解得唯一极小点为：
+    \[
+    \bm{x}^* = \begin{bmatrix} 0 \\ 0 \end{bmatrix}, \quad f_{\min} = f(0, 0) = 0
+    \]
+\end{itemize}
+
+\paragraph{(2) $f(x_1, x_2, x_3) = 3x_1^2 + 4x_2^2 + x_3^2 - 2x_1 x_2 + 3x_2 x_3 - 4x_1 + 5x_3 + 10$}
+\begin{itemize}
+    \item \textbf{矩阵形式：}
+    \[
+    f(\bm{x}) = \frac{1}{2}\begin{bmatrix} x_1 & x_2 & x_3 \end{bmatrix} \begin{bmatrix} 6 & -2 & 0 \\ -2 & 8 & 3 \\ 0 & 3 & 2 \end{bmatrix} \begin{bmatrix} x_1 \\ x_2 \\ x_3 \end{bmatrix} + \begin{bmatrix} -4 \\ 0 \\ 5 \end{bmatrix}^T \begin{bmatrix} x_1 \\ x_2 \\ x_3 \end{bmatrix} + 10
+    \]
+    其中 $\bm{Q} = \begin{bmatrix} 6 & -2 & 0 \\ -2 & 8 & 3 \\ 0 & 3 & 2 \end{bmatrix}$，$\bm{b} = \begin{bmatrix} -4 \\ 0 \\ 5 \end{bmatrix}$，$c = 10$。
+    \item \textbf{检验正定性：}
+    各阶顺序主子式为：
+    \[
+    \Delta_1 = 6 > 0, \quad \Delta_2 = \begin{vmatrix} 6 & -2 \\ -2 & 8 \end{vmatrix} = 44 > 0, \quad \Delta_3 = \det(\bm{Q}) = 6(16 - 9) - (-2)(-4 - 0) = 42 - 8 = 34 > 0
+    \]
+    $\bm{Q}$ 严格正定，驻点即为唯一的全局极小点。
+    \item \textbf{求解极小点：}
+    解方程 $\nabla f(\bm{x}) = \bm{Q}\bm{x} + \bm{b} = \bm{0} \iff \bm{Q}\bm{x} = -\bm{b}$：
+    \[
+    \begin{cases}
+    6x_1 - 2x_2 = 4 \\
+    -2x_1 + 8x_2 + 3x_3 = 0 \\
+    3x_2 + 2x_3 = -5
+    \end{cases}
+    \]
+    由第 (1) 式得 $x_2 = 3x_1 - 2$；由第 (3) 式得 $x_3 = \dfrac{-5 - 3x_2}{2}$。
+    代入第 (2) 式：
+    \[
+    -4x_1 + 16x_2 + 3(-5 - 3x_2) = 0 \implies -4x_1 + 7x_2 = 15
+    \]
+    将 $x_2 = 3x_1 - 2$ 代入：
+    \[
+    -4x_1 + 7(3x_1 - 2) = 15 \implies 17x_1 = 29 \implies x_1^* = \frac{29}{17}
+    \]
+    反代求出 $x_2^*$ 和 $x_3^*$：
+    \[
+    x_2^* = 3\left(\frac{29}{17}\right) - 2 = \frac{53}{17}, \quad x_3^* = \frac{-5 - 3(53/17)}{2} = -\frac{122}{17}
+    \]
+    故极小点为 $\bm{x}^* = \left[ \dfrac{29}{17}, \dfrac{53}{17}, -\dfrac{122}{17} \right]^T$。
+    \item \textbf{极小值：}
+    利用极小点处性质 $f(\bm{x}^*) = \dfrac{1}{2}\bm{b}^T \bm{x}^* + c$：
+    \[
+    \bm{b}^T \bm{x}^* = -4\left(\frac{29}{17}\right) + 0 + 5\left(-\frac{122}{17}\right) = \frac{-116 - 610}{17} = -\frac{726}{17}
+    \]
+    \[
+    f_{\min} = \frac{1}{2}\left(-\frac{726}{17}\right) + 10 = -\frac{363}{17} + \frac{170}{17} = -\frac{193}{17}
+    \]
+\end{itemize}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.21}
+\textbf{题目：} 试证 $\bm{x}^* = [1, 1]^T$ 是函数 $f(x_1, x_2) = (x_2 - x_1^2)^2 + (1 - x_1)^2$ 的严格全局极小点，并应用 Taylor 展开式，求这个函数在点 $\bm{x}^*$ 的邻域内的二次函数近似式。
+
+\paragraph{证明：}
+对任意 $(x_1, x_2) \in \mathbb{R}^2$，因为两个偶次平方项恒非负：
+\[
+f(x_1, x_2) = (x_2 - x_1^2)^2 + (1 - x_1)^2 \ge 0
+\]
+而在点 $\bm{x}^* = [1, 1]^T$ 处，计算函数值：
+\[
+f(1, 1) = (1 - 1^2)^2 + (1 - 1)^2 = 0
+\]
+若使 $f(x_1, x_2) = 0$，当且仅当两个平方项同时为零：
+\[
+\begin{cases}
+1 - x_1 = 0 \implies x_1 = 1 \\
+x_2 - x_1^2 = 0 \implies x_2 = 1^2 = 1
+\end{cases}
+\]
+因此，对一切 $(x_1, x_2) \neq (1, 1)$，恒有 $f(x_1, x_2) > 0 = f(\bm{x}^*)$。故 $\bm{x}^* = [1, 1]^T$ 是严格全局极小点。
+
+\paragraph{求二次 Taylor 近似式：}
+在 $\bm{x}^* = [1, 1]^T$ 处，函数值 $f(\bm{x}^*) = 0$，且极值点处梯度 $\nabla f(\bm{x}^*) = \bm{0}$。
+计算函数的二阶偏导数：
+展开函数：$f(x_1, x_2) = x_2^2 - 2x_1^2 x_2 + x_1^4 + x_1^2 - 2x_1 + 1$。
+\[
+\begin{aligned}
+\frac{\partial f}{\partial x_1} &= -4x_1 x_2 + 4x_1^3 + 2x_1 - 2 \implies \frac{\partial^2 f}{\partial x_1^2} = -4x_2 + 12x_1^2 + 2 \\
+\frac{\partial f}{\partial x_2} &= 2x_2 - 2x_1^2 \implies \frac{\partial^2 f}{\partial x_2^2} = 2, \quad \frac{\partial^2 f}{\partial x_1 \partial x_2} = -4x_1
+\end{aligned}
+\]
+在点 $(1, 1)$ 处取值：
+\[
+\frac{\partial^2 f}{\partial x_1^2}(1, 1) = -4 + 12 + 2 = 10, \quad \frac{\partial^2 f}{\partial x_1 \partial x_2}(1, 1) = -4, \quad \frac{\partial^2 f}{\partial x_2^2}(1, 1) = 2
+\]
+故 Hesse 矩阵为 $\nabla^2 f(\bm{x}^*) = \begin{bmatrix} 10 & -4 \\ -4 & 2 \end{bmatrix}$。
+Taylor 二次近似表达式为：
+\[
+\begin{aligned}
+q(\bm{x}) &= f(\bm{x}^*) + \nabla f(\bm{x}^*)^T (\bm{x} - \bm{x}^*) + \frac{1}{2}(\bm{x} - \bm{x}^*)^T \nabla^2 f(\bm{x}^*) (\bm{x} - \bm{x}^*) \\
+&= \frac{1}{2}\begin{bmatrix} x_1 - 1 & x_2 - 1 \end{bmatrix} \begin{bmatrix} 10 & -4 \\ -4 & 2 \end{bmatrix} \begin{bmatrix} x_1 - 1 \\ x_2 - 1 \end{bmatrix} \\
+&= 5(x_1 - 1)^2 - 4(x_1 - 1)(x_2 - 1) + (x_2 - 1)^2
+\end{aligned}
+\]
+完全展开合并同类项后得到：
+\[
+q(\bm{x}) = 5(x_1 - 1)^2 - 4(x_1 - 1)(x_2 - 1) + (x_2 - 1)^2 = 5x_1^2 - 4x_1 x_2 + x_2^2 - 6x_1 + 2x_2 + 2
+\]
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.22}
+\textbf{题目：} 试证直线 $2x_1 - x_2 = 0$ 上任何一点都是函数 $f(x_1, x_2) = 4x_1^2 - 4x_1 x_2 + x_2^2$ 的非严格全局极小点，并证明其等值线是平行线族。
+
+\begin{proof}
+\begin{enumerate}
+    \item \textbf{证明极小点：}
+    目标函数可直接完全平方式分解为：
+    \[
+    f(x_1, x_2) = (2x_1 - x_2)^2 \ge 0, \quad \forall (x_1, x_2) \in \mathbb{R}^2
+    \]
+    对于满足直线方程 $2x_1 - x_2 = 0$ 的任意一点 $(x_1, 2x_1)$，均有 $f(x_1, 2x_1) = 0$。
+    因此，该直线上的所有点都达到了函数的全局最小值 0。
+    又因为在该直线上的任意一点的任意去心邻域内，仍然存在该直线上的其他点满足 $f = 0$（并不严格大于 0），故直线上的每一个点均为\textbf{非严格全局极小点}。
+
+    \item \textbf{证明等值线是平行线族：}
+    令 $f(x_1, x_2) = c$（$c \ge 0$）：
+    \[
+    (2x_1 - x_2)^2 = c \implies 2x_1 - x_2 = \pm \sqrt{c} \iff x_2 = 2x_1 \mp \sqrt{c}
+    \]
+    这表示一族斜率恒为 $k = 2$、法向量恒为 $[2, -1]^T$ 的平行直线。因此，该函数的等值线是一族平行线族。
+\end{enumerate}
+\end{proof}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.23}
+\textbf{题目：} 试证 $\bm{x}^* = [0, 0]^T$ 是函数 $f(x_1, x_2) = 4x_1^2 + x_2^2 - x_1^2 x_2$ 的严格局部极小点，而 $\bm{x}_1 = [2\sqrt{2}, 4]^T$ 和 $\bm{x}_2 = [-2\sqrt{2}, 4]^T$ 是鞍点。[注：所谓鞍点，是指该点是驻点但不是极值点。]
+
+\begin{proof}
+求函数的一阶偏导数并建立驻点方程：
+\[
+\begin{cases}
+\dfrac{\partial f}{\partial x_1} = 8x_1 - 2x_1 x_2 = 2x_1(4 - x_2) = 0 \\[2mm]
+\dfrac{\partial f}{\partial x_2} = 2x_2 - x_1^2 = 0
+\end{cases}
+\]
+解此方程组：
+由第一式可得 $x_1 = 0$ 或 $x_2 = 4$。
+\begin{itemize}
+    \item 若 $x_1 = 0$，代入第二式得 $x_2 = 0$，得到驻点 $\bm{x}^* = [0, 0]^T$；
+    \item 若 $x_2 = 4$，代入第二式得 $x_1^2 = 8 \implies x_1 = \pm 2\sqrt{2}$，得到驻点 $\bm{x}_1 = [2\sqrt{2}, 4]^T$ 和 $\bm{x}_2 = [-2\sqrt{2}, 4]^T$。
+\end{itemize}
+函数的 Hesse 矩阵为：
+\[
+\nabla^2 f(x_1, x_2) = \begin{bmatrix}
+8 - 2x_2 & -2x_1 \\
+-2x_1 & 2
+\end{bmatrix}
+\]
+分别代入各驻点进行性状判别：
+\begin{enumerate}
+    \item 在 $\bm{x}^* = [0, 0]^T$ 处：
+    \[
+    \nabla^2 f(0, 0) = \begin{bmatrix} 8 & 0 \\ 0 & 2 \end{bmatrix}
+    \]
+    顺序主子式 $\Delta_1 = 8 > 0$，$\Delta_2 = 16 > 0$，Hesse 矩阵正定。
+    由多元函数极值的充分条件，$\bm{x}^* = [0, 0]^T$ 是严格局部极小点。
+
+    \item 在 $\bm{x}_1 = [2\sqrt{2}, 4]^T$ 处：
+    \[
+    \nabla^2 f(2\sqrt{2}, 4) = \begin{bmatrix} 0 & -4\sqrt{2} \\ -4\sqrt{2} & 2 \end{bmatrix}
+    \]
+    其行列式值为 $\det(\nabla^2 f) = 0\times 2 - (-4\sqrt{2})^2 = -32 < 0$。特征值一正一负，Hesse 矩阵不定。因此，$\bm{x}_1$ 是驻点但不是极值点，为鞍点。
+
+    \textbf{方向直观验证：} 对于驻点 $\bm{x}_1 = [2\sqrt{2}, 4]^T$：
+    \begin{itemize}
+        \item 考察过该点平行于 $x_2$ 轴的直线（固定 $x_1 = 2\sqrt{2}$）：
+        \[
+        f(2\sqrt{2}, x_2) = 4(8) + x_2^2 - 8x_2 = (x_2 - 4)^2 + 16
+        \]
+        在 $x_2 = 4$ 处取得沿该直线方向的极小值 $16$。
+        \item 考察过该点沿直线 $x_2 = \sqrt{2}x_1$ 的方向：
+        \[
+        f(x_1, \sqrt{2}x_1) = 4x_1^2 + 2x_1^2 - \sqrt{2}x_1^3 = 6x_1^2 - \sqrt{2}x_1^3
+        \]
+        一阶导数在 $x_1 = 2\sqrt{2}$ 处为 0，二阶导数为 $12 - 6\sqrt{2}x_1 = 12 - 24 = -12 < 0$，在 $x_1 = 2\sqrt{2}$ 处取得沿该直线方向的极大值。
+    \end{itemize}
+    因该驻点在某些方向上取极小、在另一些方向上取极大，故不是极值点，确为鞍点。
+
+    \item 在 $\bm{x}_2 = [-2\sqrt{2}, 4]^T$ 处：
+    \[
+    \nabla^2 f(-2\sqrt{2}, 4) = \begin{bmatrix} 0 & 4\sqrt{2} \\ 4\sqrt{2} & 2 \end{bmatrix}
+    \]
+    行列式值 $\det(\nabla^2 f) = -32 < 0$，Hesse 矩阵不定。因此，$\bm{x}_2$ 同样是鞍点（同理可证）。
+\end{enumerate}
+\end{proof}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.24}
+\textbf{题目：} 利用极小点的判定条件求解以下极小化问题。
+
+\subsection*{(1) $\min f(x_1, x_2) = \dfrac{1}{3}x_1^3 + \dfrac{1}{3}x_2^3 - x_2^2 - x_1$}
+\paragraph{解：}
+求一阶驻点：
+\[
+\begin{cases}
+\dfrac{\partial f}{\partial x_1} = x_1^2 - 1 = 0 \implies x_1 = \pm 1 \\[2mm]
+\dfrac{\partial f}{\partial x_2} = x_2^2 - 2x_2 = x_2(x_2 - 2) = 0 \implies x_2 = 0 \text{ 或 } 2
+\end{cases}
+\]
+得到四个驻点：$(1, 0), (1, 2), (-1, 0), (-1, 2)$。
+Hesse 矩阵为：
+\[
+\nabla^2 f(x_1, x_2) = \begin{bmatrix} 2x_1 & 0 \\ 0 & 2x_2 - 2 \end{bmatrix}
+\]
+极小点的二阶充分条件要求 $\nabla^2 f$ 正定，即要求对角线元素满足 $2x_1 > 0$ 且 $2x_2 - 2 > 0$：
+\begin{itemize}
+    \item 在 $(1, 2)$ 处：$\nabla^2 f = \begin{bmatrix} 2 & 0 \\ 0 & 2 \end{bmatrix}$ 正定，因此 $(1, 2)$ 是\textbf{局部极小点}；
+    \item 在 $(1, 0)$ 处：$\nabla^2 f = \begin{bmatrix} 2 & 0 \\ 0 & -2 \end{bmatrix}$ 不定，为鞍点；
+    \item 在 $(-1, 2)$ 处：$\nabla^2 f = \begin{bmatrix} -2 & 0 \\ 0 & 2 \end{bmatrix}$ 不定，为鞍点；
+    \item 在 $(-1, 0)$ 处：$\nabla^2 f = \begin{bmatrix} -2 & 0 \\ 0 & -2 \end{bmatrix}$ 负定，为局部极大点。
+\end{itemize}
+代入求得局部极小值为：
+\[
+f(1, 2) = \frac{1}{3}(1)^3 + \frac{1}{3}(2)^3 - 2^2 - 1 = \frac{1}{3} + \frac{8}{3} - 4 - 1 = 3 - 5 = -2
+\]
+（注：由于当 $x_1 \to -\infty$ 时 $f \to -\infty$，函数在全空间无界，不存在全局极小点）。
+
+\subsection*{(2) $\min f(x_1, x_2) = (x_1 - 2)^4 + (x_1 - 2x_2)^2$}
+\paragraph{解：}
+由一阶必要条件寻找驻点：
+\[
+\begin{cases}
+\dfrac{\partial f}{\partial x_1} = 4(x_1 - 2)^3 + 2(x_1 - 2x_2) = 0 \\[2mm]
+\dfrac{\partial f}{\partial x_2} = -4(x_1 - 2x_2) = 0
+\end{cases}
+\]
+由第二式得 $x_1 - 2x_2 = 0$，代入第一式即得 $4(x_1 - 2)^3 = 0 \implies x_1 = 2$。
+进而由 $x_1 - 2x_2 = 0$ 解得 $x_2 = 1$。因此全空间唯一驻点为 $\bm{x}^* = [2, 1]^T$。
+由于：
+\[
+f(x_1, x_2) = (x_1 - 2)^4 + (x_1 - 2x_2)^2 \ge 0, \quad \forall (x_1, x_2)
+\]
+且 $f(2, 1) = 0$，对于任意 $(x_1, x_2) \neq (2, 1)$，均有 $f(x_1, x_2) > 0$。
+故 $\bm{x}^* = [2, 1]^T$ 是全局唯一极小点，极小值为 $0$。
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.25}
+\textbf{题目：} 设目标函数为 $f(x_1, x_2) = x_1^2 + 5x_2^2$。现在从点 $\bm{x}_0 = [1, 1]^T$ 出发，沿 $\bm{p} = [-2, -1]^T$ 的方向作直线搜索，试求搜索到的极小点 $\bm{z}$，并验证 $\nabla f(\bm{z})^T \bm{p} = 0$。
+
+\paragraph{解：}
+\begin{enumerate}
+    \item 构造一维直线搜索函数：从 $\bm{x}_0$ 出发，搜索线上的任意点表示为：
+    \[
+    \bm{x}(\alpha) = \bm{x}_0 + \alpha \bm{p} = \begin{bmatrix} 1 \\ 1 \end{bmatrix} + \alpha \begin{bmatrix} -2 \\ -1 \end{bmatrix} = \begin{bmatrix} 1 - 2\alpha \\ 1 - \alpha \end{bmatrix}
+    \]
+    代入目标函数：
+    \[
+    \phi(\alpha) = f(\bm{x}(\alpha)) = (1 - 2\alpha)^2 + 5(1 - \alpha)^2 = (1 - 4\alpha + 4\alpha^2) + 5(1 - 2\alpha + \alpha^2) = 9\alpha^2 - 14\alpha + 6
+    \]
+    \item 求最优搜索步长因子 $\alpha^*$：
+    令导数等于 0：
+    \[
+    \phi'(\alpha) = 18\alpha - 14 = 0 \implies \alpha^* = \frac{14}{18} = \frac{7}{9}
+    \]
+    因为 $\phi''(\alpha) = 18 > 0$，所以 $\alpha^* = \dfrac{7}{9}$ 确为极小点。
+    \item 确定搜索到的极小点 $\bm{z}$：
+    \[
+    \bm{z} = \bm{x}(\alpha^*) = \begin{bmatrix} 1 - 2\left(\dfrac{7}{9}\right) \\[2mm] 1 - \dfrac{7}{9} \end{bmatrix} = \begin{bmatrix} -\dfrac{5}{9} \\[2mm] \dfrac{2}{9} \end{bmatrix}
+    \]
+    \item 验证梯度正交性 $\nabla f(\bm{z})^T \bm{p} = 0$：
+    函数的梯度为 $\nabla f(\bm{x}) = \begin{bmatrix} 2x_1 \\ 10x_2 \end{bmatrix}$。
+    在点 $\bm{z}$ 处的梯度为：
+    \[
+    \nabla f(\bm{z}) = \begin{bmatrix} 2\left(-\dfrac{5}{9}\right) \\[2mm] 10\left(\dfrac{2}{9}\right) \end{bmatrix} = \begin{bmatrix} -\dfrac{10}{9} \\[2mm] \dfrac{20}{9} \end{bmatrix}
+    \]
+    计算梯度与搜索方向的内积：
+    \[
+    \nabla f(\bm{z})^T \bm{p} = \left(-\frac{10}{9}\right)(-2) + \left(\frac{20}{9}\right)(-1) = \frac{20}{9} - \frac{20}{9} = 0
+    \]
+    正交条件验证成立。
+\end{enumerate}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.26}
+\textbf{题目：} 设目标函数为 $f(\bm{x}) = \dfrac{1}{2} \bm{x}^T \bm{Q} \bm{x} + \bm{b}^T \bm{x} + c$，其中 $\bm{Q}$ 是 $n \times n$ 对称正定矩阵。试证：从任意点 $\bm{x}_0$（但 $\nabla f(\bm{x}_0) \neq \bm{0}$）出发，沿 $\bm{p} = -\bm{Q}^{-1}\nabla f(\bm{x}_0)$ 的方向对 $f(\bm{x})$ 作直线搜索所得到的极小点 $\bm{z}$ 恰是 $f(\bm{x})$ 的极小点，而且最优步长因子等于 1。
+
+\begin{proof}
+\begin{enumerate}
+    \item \textbf{求解函数的理论全局极小点：}
+    因为 $\bm{Q}$ 正定，$f(\bm{x})$ 为严格凸二次函数，其极小点满足一阶必要条件：
+    \[
+    \nabla f(\bm{x}^*) = \bm{Q}\bm{x}^* + \bm{b} = \bm{0} \implies \bm{x}^* = -\bm{Q}^{-1}\bm{b}
+    \]
+    在初始点 $\bm{x}_0$ 处，其梯度为 $\nabla f(\bm{x}_0) = \bm{Q}\bm{x}_0 + \bm{b}$。
+    给定的搜索方向为：
+    \[
+    \bm{p} = -\bm{Q}^{-1}\nabla f(\bm{x}_0) = -\bm{Q}^{-1}(\bm{Q}\bm{x}_0 + \bm{b}) = -\bm{x}_0 - \bm{Q}^{-1}\bm{b} = \bm{x}^* - \bm{x}_0
+    \]
+    \item \textbf{沿方向 $\bm{p}$ 实施精确直线搜索：}
+    直线上的点为 $\bm{x}(\alpha) = \bm{x}_0 + \alpha \bm{p}$，对应一元目标函数为：
+    \[
+    \phi(\alpha) = f(\bm{x}_0 + \alpha \bm{p}) = f(\bm{x}_0) + \alpha \nabla f(\bm{x}_0)^T \bm{p} + \frac{1}{2}\alpha^2 \bm{p}^T \bm{Q} \bm{p}
+    \]
+    求导令 $\phi'(\alpha) = 0$ 确定最优步长因子：
+    \[
+    \phi'(\alpha) = \nabla f(\bm{x}_0)^T \bm{p} + \alpha \bm{p}^T \bm{Q} \bm{p} = 0 \implies \alpha^* = -\frac{\nabla f(\bm{x}_0)^T \bm{p}}{\bm{p}^T \bm{Q}\bm{p}}
+    \]
+    \item \textbf{计算最优步长因子 $\alpha^*$：}
+    将 $\bm{p} = -\bm{Q}^{-1}\nabla f(\bm{x}_0)$ 代入分子和分母：
+    \begin{itemize}
+        \item 分子内积项：
+        \[
+        \nabla f(\bm{x}_0)^T \bm{p} = \nabla f(\bm{x}_0)^T \left( -\bm{Q}^{-1}\nabla f(\bm{x}_0) \right) = -\nabla f(\bm{x}_0)^T \bm{Q}^{-1}\nabla f(\bm{x}_0)
+        \]
+        \item 分母二次项（利用 $\bm{Q}^T = \bm{Q}$）：
+        \[
+        \bm{p}^T \bm{Q}\bm{p} = \left( -\bm{Q}^{-1}\nabla f(\bm{x}_0) \right)^T \bm{Q} \left( -\bm{Q}^{-1}\nabla f(\bm{x}_0) \right) = \nabla f(\bm{x}_0)^T \bm{Q}^{-1}\bm{Q}\bm{Q}^{-1}\nabla f(\bm{x}_0) = \nabla f(\bm{x}_0)^T \bm{Q}^{-1}\nabla f(\bm{x}_0)
+        \]
+    \end{itemize}
+    由于 $\bm{Q}$ 正定且 $\nabla f(\bm{x}_0) \neq \bm{0}$，分母严格大于零。因此：
+    \[
+    \alpha^* = -\frac{-\nabla f(\bm{x}_0)^T \bm{Q}^{-1}\nabla f(\bm{x}_0)}{\nabla f(\bm{x}_0)^T \bm{Q}^{-1}\nabla f(\bm{x}_0)} = 1
+    \]
+    即最优步长因子恒等于 1。
+    \item \textbf{确定极小点 $\bm{z}$：}
+    将 $\alpha^* = 1$ 代入：
+    \[
+    \bm{z} = \bm{x}_0 + \alpha^* \bm{p} = \bm{x}_0 + 1 \cdot (\bm{x}^* - \bm{x}_0) = \bm{x}^*
+    \]
+    故通过单次一维搜索得到的点 $\bm{z}$ 恰好是函数 $f(\bm{x})$ 在全空间的极小点。
+\end{enumerate}
+\end{proof}
+
+\vspace{1em}
+\hrule
+\vspace{1em}
+
+\section*{习题 1.27}
+\textbf{题目：} 设 $f: \mathbb{R}^n \to \mathbb{R}^1$ 在点 $\bm{x}_0$ 处可微，$\bm{p}_1, \bm{p}_2, \cdots, \bm{p}_n$ 是 $\mathbb{R}^n$ 中的线性无关向量组。试证：若 $\bm{x}_0 = \mathrm{ls}(\bm{x}_0, \bm{p}_i)$（$i = 1, 2, \cdots, n$），则 $\nabla f(\bm{x}_0) = \bm{0}$。并问这是否意味着 $\bm{x}_0$ 是 $f$ 的局部极小点？
+
+\begin{proof}
+\textbf{证明 $\nabla f(\bm{x}_0) = \bm{0}$：}
+记号 $\bm{x}_0 = \mathrm{ls}(\bm{x}_0, \bm{p}_i)$ 表示以 $\bm{x}_0$ 为起点、沿方向 $\bm{p}_i$ 进行直线搜索时，在步长 $\alpha = 0$ 处取得极小值。
+对固定的 $i \in \{1, 2, \dots, n\}$，定义一元函数：
+\[
+\phi_i(\alpha) = f(\bm{x}_0 + \alpha \bm{p}_i)
+\]
+已知 $\alpha = 0$ 是 $\phi_i(\alpha)$ 的局部极值点。由于 $f$ 在 $\bm{x}_0$ 处可微，由一元可微函数极值的一阶必要条件得：
+\[
+\phi_i'(0) = 0 \implies \nabla f(\bm{x}_0)^T \bm{p}_i = 0, \quad \forall i = 1, 2, \dots, n
+\]
+构造矩阵 $\bm{P} = [\bm{p}_1, \bm{p}_2, \cdots, \bm{p}_n] \in \mathbb{R}^{n \times n}$，则上述 $n$ 个等式联立可写为矩阵乘积形式：
+\[
+\bm{P}^T \nabla f(\bm{x}_0) = \begin{bmatrix}
+\bm{p}_1^T \nabla f(\bm{x}_0) \\
+\bm{p}_2^T \nabla f(\bm{x}_0) \\
+\vdots \\
+\bm{p}_n^T \nabla f(\bm{x}_0)
+\end{bmatrix} = \begin{bmatrix} 0 \\ 0 \\ \vdots \\ 0 \end{bmatrix} = \bm{0}
+\]
+因为向量组 $\bm{p}_1, \dots, \bm{p}_n$ 线性无关，所以方阵 $\bm{P}$ 满秩可逆，转置矩阵 $\bm{P}^T$ 亦满秩可逆。两端左乘 $(\bm{P}^T)^{-1}$，立即推得：
+\[
+\nabla f(\bm{x}_0) = \bm{0}
+\]
+\end{proof}
+
+\paragraph{问题回答：这是否意味着 $\bm{x}_0$ 是 $f$ 的局部极小点？}
+\textbf{答：不一定。这并不意味着 $\bm{x}_0$ 是 $f$ 的局部极小点。}
+
+\paragraph{原因与反例分析：}
+$\nabla f(\bm{x}_0) = \bm{0}$ 仅说明 $\bm{x}_0$ 是驻点，它可以是局部极大点或鞍点。更进一步地，即便一个函数在点 $\bm{x}_0$ 沿所有直线方向都是一维严格局部极小点，该点在全空间多维意义下也可能不是局部极小点（即著名的皮亚诺曲面反例）。
+
+\textbf{经典反例（Peano 反例）：}
+考虑定义在 $\mathbb{R}^2$ 上的函数：
+\[
+f(x_1, x_2) = (x_2 - x_1^2)(x_2 - 2x_1^2)
+\]
+取初始点为原点 $\bm{x}_0 = [0, 0]^T$。选取两个线性无关的方向，例如沿两个坐标轴方向 $\bm{p}_1 = [1, 0]^T$ 和 $\bm{p}_2 = [0, 1]^T$：
+\begin{itemize}
+    \item 沿 $\bm{p}_1$ 方向：$\phi_1(\alpha) = f(\alpha, 0) = (-\alpha^2)(-2\alpha^2) = 2\alpha^4$。在 $\alpha = 0$ 处导数为 0 且为严格局部极小点；
+    \item 沿 $\bm{p}_2$ 方向：$\phi_2(\alpha) = f(0, \alpha) = \alpha^2$。在 $\alpha = 0$ 处导数为 0 且为严格局部极小点。
+\end{itemize}
+此时完全满足 $\bm{x}_0 = \mathrm{ls}(\bm{x}_0, \bm{p}_1)$ 与 $\bm{x}_0 = \mathrm{ls}(\bm{x}_0, \bm{p}_2)$。
+
+但 $\bm{x}_0 = [0, 0]^T$ \textbf{并不是} $f$ 的局部极小点：
+在经过原点的两条抛物线 $x_2 = x_1^2$ 与 $x_2 = 2x_1^2$ 之间的狭长区域内部，例如沿曲线 $x_2 = \dfrac{3}{2}x_1^2$，计算函数值：
+\[
+f\left(x_1, \frac{3}{2}x_1^2\right) = \left( \frac{1}{2}x_1^2 \right)\left( -\frac{1}{2}x_1^2 \right) = -\frac{1}{4}x_1^4 < 0 = f(0, 0) \quad (\forall x_1 \neq 0)
+\]
+在原点的任意邻域内都存在使得函数值严格小于 $f(0, 0)$ 的点，故原点是一个鞍点而非局部极小点。
+
+\end{document}
