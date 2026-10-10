@@ -1,0 +1,1064 @@
+<title>单纯形法习题演算</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;900&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+<script src="engine.js"></script>
+<script src="problems.js"></script>
+<style>
+/* 版式：16:9 演算纸舞台（左单纯形表 / 右几何视图 / 底部旁白），舞台外为播放控制与题目输入 */
+:root{
+  --paper:#FCFCFA; --paper-2:#F3F5F8; --grid:rgba(36,70,180,.055); --ink:#151C2B; --muted:#677184; --line:#D8DDE6;
+  --blue:#2148D0; --red:#E2402A; --green:#0B8F6A; --amber:#C27C0E; --violet:#7448D6; --teal:#0C8A93;
+  --f-display:"Noto Serif SC","Songti SC","STSong",serif;
+  --f-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --f-num:"JetBrains Mono",Consolas,"Courier New",monospace;
+  --f-math:"STIX Two Text","Times New Roman",serif;
+  color-scheme:light;
+}
+html{scrollbar-gutter:stable}
+html,body{background:var(--paper-2);color:var(--ink);font-family:var(--f-body)}
+body{overflow-x:hidden}
+.k-x{color:var(--ink)} .k-s{color:var(--teal)} .k-e{color:var(--violet)} .k-a{color:var(--amber)}
+.v{font-family:var(--f-math);white-space:nowrap}
+.v i{font-style:italic}
+.v sub{font-size:.62em;font-style:normal;bottom:-.3em}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1;font-size:.72em;margin:0 .06em}
+.fr>span:first-child{border-bottom:1.5px solid currentColor;padding:0 .12em .08em}
+.fr>span:last-child{padding:.08em .12em 0}
+.op{margin:0 .28em;font-family:var(--f-math)}
+.muted{color:var(--muted)}
+
+/* ---------- 舞台 ---------- */
+#frame{position:relative;width:100%;overflow:hidden;border-radius:14px;box-shadow:0 1px 0 rgba(21,28,43,.06),0 18px 50px -24px rgba(21,28,43,.35);background:var(--paper)}
+#frame:fullscreen{border-radius:0;display:flex;align-items:center;justify-content:center;background:#0f1420}
+#stage{position:absolute;left:0;top:0;width:1600px;height:900px;transform-origin:0 0;overflow:hidden;
+  background:
+    linear-gradient(var(--grid) 1px,transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/40px 40px,var(--paper);}
+#stage::before{content:"";position:absolute;left:28px;top:0;bottom:0;width:1.5px;background:rgba(226,64,42,.22)}
+#hdr{position:absolute;left:56px;right:48px;top:30px;height:84px;display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1.5px solid var(--ink)}
+#h-group{font-size:15px;letter-spacing:.14em;color:var(--muted);margin-bottom:2px}
+#h-title{font-family:var(--f-display);font-weight:900;font-size:40px;line-height:1.15;padding-bottom:10px}
+#h-right{display:flex;gap:10px;padding-bottom:14px}
+.pill{font-size:15px;padding:5px 14px;border-radius:99px;border:1.5px solid var(--ink);letter-spacing:.06em;transition:all .4s}
+.pill.solid{background:var(--ink);color:var(--paper)}
+.pill.ph-I{background:var(--amber);border-color:var(--amber);color:#fff}
+.pill.ph-II,.pill.ph-S{background:var(--blue);border-color:var(--blue);color:#fff}
+
+#main{position:absolute;left:56px;top:140px;width:960px;height:630px}
+.view{position:absolute;inset:0;opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s;pointer-events:none}
+.view.on{opacity:1;transform:none}
+#side{position:absolute;left:1040px;top:140px;width:512px;height:630px;display:flex;flex-direction:column;gap:14px}
+#geoBox{position:relative;height:340px;flex:none;border:1.5px solid var(--line);border-radius:12px;background:rgba(255,255,255,.72);overflow:hidden}
+#geo{width:512px;height:340px;display:block;cursor:grab;touch-action:none}
+#geoTag{position:absolute;left:14px;top:10px;font-size:13px;letter-spacing:.12em;color:var(--muted)}
+#geoLegend{position:absolute;left:14px;bottom:10px;display:flex;gap:14px;font-size:12.5px;color:var(--muted)}
+#geoLegend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;background:var(--c)}
+#orig{flex:none;border:1.5px solid var(--ink);border-radius:12px;background:rgba(255,255,255,.9);padding:10px 18px 12px;font-family:var(--f-math);font-size:19px;line-height:1.5}
+#orig .t{font-family:var(--f-body);font-size:12.5px;letter-spacing:.12em;color:var(--muted);margin-bottom:2px}
+#orig .kw{font-size:.95em}
+#orig .rows{border-left:2px solid var(--ink);padding-left:12px;margin-top:2px}
+#zm{flex:1;min-height:0;border:1.5px solid var(--line);border-radius:12px;background:rgba(255,255,255,.72);padding:8px 18px;display:flex;flex-direction:column;justify-content:center}
+#zm-l{font-size:13px;letter-spacing:.12em;color:var(--muted)}
+#zm-v{font-family:var(--f-num);font-weight:700;font-size:32px;line-height:1.1;display:flex;align-items:center;gap:12px}
+#zm-v .fr{font-size:.6em}
+#zm-h{font-family:var(--f-num);font-size:15px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#zm-h b{color:var(--ink)}
+
+#narr{position:absolute;left:56px;right:48px;top:790px;height:86px;display:flex;gap:18px;align-items:center;border-top:1.5px solid var(--ink);padding-top:10px}
+#narr-ic{flex:none;width:44px;height:44px;border-radius:50%;background:var(--ink);color:var(--paper);display:flex;align-items:center;justify-content:center}
+#narr-t{font-size:23px;line-height:1.45}
+#narr-f{font-family:var(--f-math);font-size:21px;color:var(--blue);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#narr-f b{color:var(--red)}
+.say-in{animation:sayIn .55s cubic-bezier(.2,.7,.2,1) both}
+@keyframes sayIn{from{opacity:0;transform:translateY(10px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+
+/* ---------- 模型 / 标准化 ---------- */
+.model{font-family:var(--f-math);font-size:38px;line-height:1.75;padding:40px 20px}
+.kw{font-family:var(--f-math);font-weight:600;color:var(--blue);margin-right:.35em}
+.m-st{display:flex;gap:26px;align-items:flex-start}
+.m-st>.kw{font-style:normal;font-size:.8em;padding-top:.25em;color:var(--muted)}
+.m-rows{border-left:2px solid var(--ink);padding-left:22px}
+.m-nn{color:var(--muted);font-size:.8em;margin-top:10px;padding-left:96px}
+.rise{animation:rise .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--d,0s)}
+@keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.std{padding:6px 0;font-size:27px}
+.std-obj{font-family:var(--f-math);font-size:28px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.std-grid{display:grid;grid-template-columns:auto 70px auto 1fr;align-items:center;column-gap:16px;row-gap:12px}
+.std-grid>.o{font-family:var(--f-math);white-space:nowrap;color:var(--muted)}
+.std-grid>.s{font-family:var(--f-math);white-space:nowrap}
+.arrow{color:var(--muted);text-align:center;font-size:22px;position:relative}
+.flip{display:inline-block;font-family:var(--f-num);font-size:14px;color:#fff;background:var(--red);border-radius:6px;padding:2px 6px;white-space:nowrap}
+.chip{display:inline-block;border-radius:8px;padding:0 6px;margin:0 1px;background:color-mix(in srgb,currentColor 12%,transparent);animation:chipIn .6s cubic-bezier(.2,1.4,.3,1) both;animation-delay:var(--d,0s)}
+@keyframes chipIn{from{opacity:0;transform:scale(.4) translateY(-14px)}to{opacity:1;transform:none}}
+.bchip{justify-self:start;font-size:15px;border:1.5px solid currentColor;border-radius:99px;padding:3px 12px;white-space:nowrap;animation:chipIn .6s both;animation-delay:var(--d,0s)}
+.legend{display:flex;gap:22px;margin-top:26px;font-size:16px;color:var(--muted);flex-wrap:wrap}
+.legend b{font-family:var(--f-math);font-size:19px}
+.note{margin-top:18px;font-size:18px;color:var(--muted);line-height:1.6;max-width:900px}
+
+/* ---------- 单纯形表 ---------- */
+.tab{position:relative;display:grid;align-items:center;font-family:var(--f-num);font-size:22px;margin-top:4px}
+.tab>.c{position:relative;z-index:2;height:100%;display:flex;align-items:center;justify-content:center;padding:0 4px;white-space:nowrap}
+.tab .hc{font-size:16px;color:var(--muted);height:36px}
+.tab .hv{font-size:23px;border-bottom:1.5px solid var(--ink);height:50px}
+.tab .row{height:66px;border-bottom:1px solid var(--line)}
+.tab .sg{height:66px;border-top:1.5px solid var(--ink);color:var(--muted)}
+.tab .lab{font-family:var(--f-body);font-size:15px;color:var(--muted);letter-spacing:.06em}
+.tab .bcol{border-left:1.5px dashed var(--line)}
+.tab .thc{font-family:var(--f-math);font-size:19px;justify-content:flex-start;padding-left:16px;color:var(--muted)}
+.tab .thc.min{color:var(--red);font-weight:600}
+.tab .opc{font-family:var(--f-math);font-size:19px;justify-content:flex-start;padding-left:16px;color:var(--blue)}
+.tab .pos{color:var(--red);font-weight:700}
+.tab .good{color:var(--green);font-weight:700}
+.tab .good::after{content:"✓";font-size:13px;margin-left:3px}
+.tab .zc{color:var(--ink);font-weight:700}
+.tab .bv{font-size:23px;font-weight:600}
+.band-col,.band-row{position:relative;z-index:0;border-radius:10px;pointer-events:none;animation:bandIn .5s cubic-bezier(.2,.7,.2,1) both}
+.band-col{background:rgba(226,64,42,.08);box-shadow:inset 0 0 0 2px rgba(226,64,42,.55)}
+.band-row{background:rgba(33,72,208,.07);box-shadow:inset 0 0 0 2px rgba(33,72,208,.45);animation-name:bandInX}
+.band-row.drop{background:rgba(226,64,42,.10);box-shadow:inset 0 0 0 2px rgba(226,64,42,.6)}
+.band-col.fade,.band-row.fade{animation:bandFade 2.2s .3s both}
+@keyframes bandIn{from{transform:scaleY(0);opacity:0}to{transform:none;opacity:1}}
+@keyframes bandInX{from{transform:scaleX(0);opacity:0;transform-origin:left}to{transform:none;opacity:1}}
+@keyframes bandFade{from{opacity:1}to{opacity:0}}
+.pv{color:#fff !important;font-weight:700}
+.pv::before{content:"";position:absolute;inset:8px 4px;border-radius:12px;background:var(--red);z-index:-1;animation:pvIn .5s cubic-bezier(.2,1.5,.3,1) both}
+.pv::after{content:"";position:absolute;inset:8px 4px;border-radius:12px;border:3px solid var(--red);z-index:-1;animation:burst 1.4s .25s ease-out infinite}
+@keyframes pvIn{from{transform:scale(.2);opacity:0}to{transform:none;opacity:1}}
+@keyframes burst{from{transform:scale(1);opacity:.9}to{transform:scale(2.1);opacity:0}}
+.rv{animation:rv .45s cubic-bezier(.2,1.4,.3,1) both;animation-delay:var(--d,0s)}
+@keyframes rv{from{opacity:0;transform:translateY(-10px) scale(.6)}to{opacity:1;transform:none}}
+.chg{animation:chg .7s cubic-bezier(.3,.7,.2,1) both;animation-delay:var(--d,0s)}
+@keyframes chg{0%{transform:rotateX(90deg);opacity:0;color:var(--blue)}60%{transform:none;opacity:1;color:var(--blue)}100%{color:inherit}}
+.hidden-sg{opacity:0}
+.scan{position:relative;z-index:3;height:66px;pointer-events:none;overflow:hidden}
+.scan::after{content:"";position:absolute;top:6px;bottom:6px;width:70px;left:-80px;background:linear-gradient(90deg,transparent,rgba(33,72,208,.28),transparent);animation:scan 1.6s cubic-bezier(.5,0,.5,1) .1s both}
+@keyframes scan{to{left:100%}}
+.strk{opacity:.25;transition:opacity .8s .4s}
+.strike-line{position:relative;z-index:3;pointer-events:none}
+.strike-line::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--amber);transform-origin:top;animation:strike .7s cubic-bezier(.6,0,.2,1) both}
+@keyframes strike{from{transform:scaleY(0)}to{transform:none}}
+.tab.enter .row,.tab.enter .hv,.tab.enter .hc{animation:rise .6s both;animation-delay:var(--d,0s)}
+
+#result{position:absolute;right:0;bottom:6px;width:520px;padding:22px 26px;background:var(--ink);color:var(--paper);border-radius:16px;box-shadow:0 30px 60px -20px rgba(21,28,43,.55);transform:translateY(40px);opacity:0;transition:all .7s cubic-bezier(.2,.8,.2,1);pointer-events:none;z-index:10}
+#result.on{transform:none;opacity:1}
+#result .r-k{font-size:14px;letter-spacing:.16em;opacity:.7}
+#result .r-x{font-family:var(--f-math);font-size:30px;margin-top:6px}
+#result .r-z{font-family:var(--f-num);font-weight:700;font-size:46px;line-height:1.15;color:#7FE3C2}
+#result .r-z.bad{color:#FF9E8A}
+#result .r-n{font-size:15px;opacity:.75;margin-top:6px;line-height:1.5}
+#result .fr{font-size:.65em}
+
+/* ---------- 转场幕布 ---------- */
+.ov{position:absolute;inset:0;z-index:50;visibility:hidden;pointer-events:none}
+.ov>.ink{position:absolute;inset:0;background:var(--blue)}
+.ov>.sheet{position:absolute;inset:0;background:
+    linear-gradient(var(--grid) 1px,transparent 1px) 0 0/40px 40px,
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/40px 40px,var(--paper)}
+.ov.in,.ov.out{visibility:visible}
+.ov.in>.ink{animation:wipeIn .55s cubic-bezier(.75,0,.2,1) both}
+.ov.in>.sheet{animation:wipeIn .6s .2s cubic-bezier(.75,0,.2,1) both}
+.ov.out>.sheet{animation:wipeOut .55s cubic-bezier(.75,0,.2,1) both}
+.ov.out>.ink{animation:wipeOut .55s .14s cubic-bezier(.75,0,.2,1) both}
+@keyframes wipeIn{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes wipeOut{from{clip-path:inset(0 0 0 0)}to{clip-path:inset(0 0 0 100%)}}
+.ov .rise{animation-delay:calc(var(--d,0s) + .45s)}
+.ch{position:absolute;inset:0;display:grid;grid-template-columns:520px 1fr;align-items:center;padding:0 90px 0 70px}
+.ch-num{font-family:var(--f-display);font-weight:900;font-size:330px;line-height:.8;color:transparent;-webkit-text-stroke:3px var(--blue);letter-spacing:-.04em}
+.ch-num span{color:var(--blue);-webkit-text-stroke:0}
+.ch-group{font-size:20px;letter-spacing:.2em;color:var(--muted)}
+.ch-title{font-family:var(--f-display);font-weight:900;font-size:78px;line-height:1.15;margin:6px 0 18px}
+.ch-model{font-family:var(--f-math);font-size:30px;line-height:1.6;border-left:3px solid var(--ink);padding:6px 0 6px 24px}
+.ch-tags{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.ch-tags span{font-size:16px;padding:5px 14px;border-radius:99px;border:1.5px solid var(--ink)}
+.ch-tags span.m{background:var(--ink);color:var(--paper)}
+.ch-count{position:absolute;right:60px;bottom:44px;font-family:var(--f-num);font-size:20px;color:var(--muted)}
+.big-title{font-family:var(--f-display);font-weight:900;font-size:128px;line-height:1.05;letter-spacing:.02em}
+.big-title em{font-style:normal;color:var(--blue)}
+.rules{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:44px}
+.rule{border-top:3px solid var(--ink);padding-top:14px}
+.rule .n{font-family:var(--f-num);font-size:14px;color:var(--muted)}
+.rule .t{font-family:var(--f-display);font-weight:900;font-size:30px;margin:4px 0}
+.rule .d{font-size:17px;line-height:1.55;color:var(--muted)}
+.rule .d .v,.rule .d{font-family:var(--f-body)}
+.phs{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:0 140px}
+.phs-k{font-family:var(--f-display);font-weight:900;font-size:150px;line-height:1}
+.phs-t{font-family:var(--f-math);font-size:44px;margin:24px 0 18px}
+.phs-d{font-size:26px;color:var(--muted);line-height:1.6;max-width:1150px}
+.fin{position:absolute;inset:0;padding:64px 70px}
+.fin-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:14px;margin-top:30px}
+.fin-card{border:1.5px solid var(--ink);border-radius:12px;padding:12px 14px;background:var(--paper);min-height:150px}
+.fin-card .t{font-size:15px;font-weight:700}
+.fin-card .s{display:inline-block;font-size:12px;margin-top:6px;padding:1px 8px;border-radius:99px;color:#fff}
+.fin-card .f{font-family:var(--f-num);font-weight:700;font-size:28px;margin-top:6px}
+.fin-card .x{font-family:var(--f-math);font-size:15px;color:var(--muted);margin-top:2px}
+#bigPlay{position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(252,252,250,.25);cursor:pointer;border:0}
+#bigPlay span{width:150px;height:150px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -10px rgba(226,64,42,.6);transition:transform .25s}
+#bigPlay[hidden]{display:none}
+#bigPlay:hover span{transform:scale(1.07)}
+#bigPlay:focus-visible span{outline:4px solid var(--blue);outline-offset:6px}
+
+/* ---------- 控制区 ---------- */
+.ctl{display:inline-flex;align-items:center;justify-content:center;height:38px;min-width:38px;padding:0 10px;border-radius:10px;border:1px solid #D5DAE3;background:#fff;color:var(--ink);transition:background .15s,border-color .15s}
+.ctl:hover{background:#EEF2FA;border-color:#B9C3D6}
+.ctl:focus-visible,.chap:focus-visible,#prog:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.ctl.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ctl svg{width:18px;height:18px}
+#prog{position:relative;height:30px;cursor:pointer;display:flex;gap:3px;align-items:center}
+#prog .seg{position:relative;height:8px;border-radius:99px;background:#DFE4EC;overflow:hidden}
+#prog .seg i{position:absolute;left:0;top:0;bottom:0;background:var(--blue)}
+#prog .seg.cur{background:#C9D3E6}
+.chap{font-size:13px;border:1px solid #D5DAE3;background:#fff;border-radius:99px;padding:4px 12px;white-space:nowrap;transition:all .15s}
+.chap:hover{border-color:var(--blue);color:var(--blue)}
+.chap.on{background:var(--blue);border-color:var(--blue);color:#fff}
+#custom-input{font-family:var(--f-num);font-size:14px;line-height:1.6}
+.pblk{border:1px solid #D5DAE3;border-radius:10px;background:#fff;padding:10px 12px;cursor:pointer;transition:border-color .15s,box-shadow .15s;min-width:0;max-width:100%}
+.pblk:hover{border-color:var(--blue)}
+.pblk.cur{border-color:var(--red);box-shadow:0 0 0 2px rgba(226,64,42,.25)}
+.pblk .ph{font-size:13px;font-weight:700;margin-bottom:6px}
+.pblk .pn{font-size:13px;color:#4B5565;margin-top:6px;line-height:1.6}
+.ptab{border-collapse:collapse;font-family:var(--f-num);font-size:14px;font-variant-numeric:tabular-nums}
+.ptab th,.ptab td{padding:3px 9px;text-align:center;white-space:nowrap}
+.ptab thead th{border-bottom:1.5px solid var(--ink);font-weight:400;font-size:15px}
+.ptab td:last-child,.ptab th:last-child{border-left:1px dashed #C9D0DB}
+.ptab tr.sg td{border-top:1.5px solid var(--ink);color:var(--muted)}
+.ptab td.pos{color:var(--red);font-weight:700}
+.ptab td.pv{background:var(--red);color:#fff;border-radius:6px;font-weight:700}
+.ptab .fr{font-size:.8em}
+.pstd{font-family:var(--f-math);font-size:16px;line-height:1.7}
+#proc.v{display:grid;grid-template-columns:fit-content(100%);justify-content:center;gap:12px}
+#proc.c{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:12px}
+.lay{background:#fff;color:var(--ink)}
+.lay.on{background:var(--ink);color:#fff}
+.lay:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s !important;animation-delay:0s !important;transition-duration:.01s !important}}
+</style>
+
+<div class="mx-auto w-full max-w-[1400px] px-4 py-6 flex flex-col gap-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div class="min-w-0">
+      <h1 style="font-family:var(--f-display)" class="text-2xl font-black tracking-wide">单纯形法习题演算</h1>
+      <p class="text-sm text-slate-500 mt-1">14 道习题逐表演示。判据：检验数 σ<sub>j</sub> = c<sub>B</sub>B<sup>−1</sup>P<sub>j</sub> − c<sub>j</sub>，全部 σ<sub>j</sub> ≤ 0 时取得全局极小。</p>
+    </div>
+    <p class="text-xs text-slate-500">空格 播放/暂停 · ← → 上一步/下一步 · PgUp PgDn 换题 · F 全屏 · 拖动右侧多面体可旋转</p>
+  </div>
+
+  <div id="frame">
+    <div id="stage">
+      <div id="hdr">
+        <div class="min-w-0"><div id="h-group"></div><div id="h-title"></div></div>
+        <div id="h-right"><span id="p-method" class="pill"></span><span id="p-phase" class="pill"></span></div>
+      </div>
+      <div id="main">
+        <div id="v-model" class="view"></div>
+        <div id="v-std" class="view"></div>
+        <div id="v-tab" class="view"></div>
+        <div id="result"></div>
+      </div>
+      <div id="side">
+        <div id="geoBox"><canvas id="geo"></canvas><div id="geoTag">可行域 · 原变量空间</div>
+          <div id="geoLegend"><span style="--c:var(--amber)">阶段一（人工解）</span><span style="--c:var(--blue)">基可行解</span><span style="--c:var(--red)">当前顶点</span></div></div>
+        <div id="orig"></div>
+        <div id="zm"><div id="zm-l">目标值</div><div id="zm-v">—</div><div id="zm-h"></div></div>
+      </div>
+      <div id="narr"><div id="narr-ic"><i data-lucide="sparkles"></i></div><div class="min-w-0"><div id="narr-t"></div><div id="narr-f"></div></div></div>
+      <div id="ov" class="ov"><div class="ink"></div><div class="sheet"></div></div>
+      <button id="bigPlay" aria-label="开始播放"><span><i data-lucide="play" style="width:64px;height:64px;margin-left:8px"></i></span></button>
+    </div>
+  </div>
+
+  <div class="flex flex-col gap-3">
+    <div id="prog" role="slider" tabindex="0" aria-label="播放进度"></div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button class="ctl" id="b-pp" title="上一题"><i data-lucide="chevrons-left"></i></button>
+      <button class="ctl" id="b-p" title="上一步"><i data-lucide="step-back"></i></button>
+      <button class="ctl on" id="b-play" title="播放/暂停"><i data-lucide="play"></i></button>
+      <button class="ctl" id="b-n" title="下一步"><i data-lucide="step-forward"></i></button>
+      <button class="ctl" id="b-nn" title="下一题"><i data-lucide="chevrons-right"></i></button>
+      <div class="flex items-center gap-1 ml-2 text-sm text-slate-500"><i data-lucide="gauge" class="w-4 h-4"></i>
+        <select id="speed" class="ctl text-sm"><option value="0.6">0.6×</option><option value="0.8">0.8×</option><option value="1" selected>1×</option><option value="1.3">1.3×</option><option value="1.7">1.7×</option><option value="2.5">2.5×</option></select></div>
+      <span id="clock" class="text-sm text-slate-500 font-mono ml-2"></span>
+      <div class="flex-1"></div>
+      <button class="ctl gap-2 text-sm" id="b-all"><i data-lucide="list-video"></i>全部习题</button>
+      <button class="ctl gap-2 text-sm" id="b-fs"><i data-lucide="maximize"></i>全屏</button>
+    </div>
+    <div id="chaps" class="flex flex-wrap gap-2"></div>
+  </div>
+
+  <section class="flex flex-col gap-3">
+    <div class="flex flex-wrap items-baseline justify-between gap-2"><h2 class="font-bold text-lg flex items-center gap-2"><i data-lucide="table-2" class="w-5 h-5"></i>求解过程 · <span id="proc-title"></span></h2>
+      <div class="flex items-center gap-3 flex-wrap"><span class="text-xs text-slate-500">随上方 MV 切换题目；点击任一张表，MV 跳到对应步骤；红框为 MV 当前所在的表。</span>
+        <div class="inline-flex rounded-lg border border-slate-300 overflow-hidden text-sm" role="group" aria-label="排列方式"><button class="lay px-3 py-1" data-lay="v">竖排</button><button class="lay px-3 py-1" data-lay="c">紧凑</button></div></div></div>
+    <div id="proc" class="v"></div>
+  </section>
+
+  <section class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] bg-white rounded-xl border border-slate-200 p-4">
+    <div class="min-w-0 flex flex-col gap-2">
+      <label for="custom-input" class="font-bold flex items-center gap-2"><i data-lucide="pencil-line" class="w-4 h-4"></i>输入题目，生成你自己的 MV</label>
+      <textarea id="custom-input" rows="8" class="w-full rounded-lg border border-slate-300 p-3 focus:outline-none focus:ring-2 focus:ring-blue-600"></textarea>
+      <div class="flex items-center gap-3 flex-wrap">
+        <button class="ctl on gap-2 text-sm" id="b-gen"><i data-lucide="clapperboard"></i>生成 MV</button>
+        <span id="gen-msg" class="text-sm"></span>
+      </div>
+    </div>
+    <div class="min-w-0 text-sm text-slate-600 leading-7">
+      <p class="font-bold text-slate-800">输入格式</p>
+      <p>第一行写目标：<code>min</code> 或 <code>max</code> 加线性表达式，如 <code>max 3x1 + 2x2 - x3</code>。</p>
+      <p>之后每行一条约束，支持 <code>&lt;=</code>、<code>&gt;=</code>、<code>=</code>（也认 ≤ ≥），系数可写分数或小数，如 <code>1/2x1 + 0.5x2 &lt;= 4</code>。</p>
+      <p>默认所有变量非负，<code>x1, x2 &gt;= 0</code> 这一行可写可不写。可选 <code>#&nbsp;标题: …</code> 设置片头标题。</p>
+      <p>2 或 3 个变量时右侧画出可行多面体与迭代路径；变量更多时改为显示基可行解各分量。</p>
+    </div>
+  </section>
+</div>
+
+<script>
+const { Q, Q0, Q1, parseProblem, solve } = SimplexEngine;
+const $ = s => document.querySelector(s);
+const SUB = '₀₁₂₃₄₅₆₇₈₉';
+const subTxt = nm => nm[0] + nm.slice(1).replace(/\d/g, d => SUB[d]);
+const OPS = { '<=': '≤', '>=': '≥', '=': '=' };
+const KIND = { x: '决策变量', s: '松弛变量', e: '剩余变量', a: '人工变量' };
+
+// ---------- 排版小工具 ----------
+const fr = (q, plus) => {
+  if (q == null) return '';
+  const s = q.sgn(), a = s < 0 ? q.neg() : q, sign = s < 0 ? '−' : plus && s > 0 ? '+' : '';
+  return a.d === 1n ? `${sign}${a.n}` : `${sign}<span class="fr"><span>${a.n}</span><span>${a.d}</span></span>`;
+};
+const par = q => (q.sgn() < 0 ? `(${fr(q)})` : fr(q));
+const V = (nm, kind = 'x') => `<span class="v k-${kind}"><i>${nm[0]}</i><sub>${nm.slice(1)}</sub></span>`;
+const sidx = nm => (nm[0] === 'x' ? nm.slice(1) : nm);
+const sig = nm => `σ<sub>${sidx(nm)}</sub>`;
+function expr(coefs, names, kinds, chipFrom = Infinity, delay = 0) {
+  let out = '', first = true, t = 0;
+  coefs.forEach((q, j) => {
+    if (q.isZero()) return;
+    const s = q.sgn(), a = s < 0 ? q.neg() : q;
+    let term = (first ? (s < 0 ? '<span class="op" style="margin-left:0">−</span>' : '') : `<span class="op">${s < 0 ? '−' : '+'}</span>`) +
+      (a.eq(Q1) ? '' : fr(a)) + V(names[j], kinds[j]);
+    if (j >= chipFrom) term = `<span class="chip k-${kinds[j]}" style="--d:${(delay + 0.35 * t++).toFixed(2)}s">${term}</span>`;
+    out += term; first = false;
+  });
+  return out || '0';
+}
+const xNames = n => Array.from({ length: n }, (_, j) => 'x' + (j + 1));
+const xKinds = n => Array(n).fill('x');
+const vecHTML = xs => `(${xs.map(q => fr(q)).join(', ')})`;
+function modelHTML(P, cls = '') {
+  const nm = xNames(P.n), kd = xKinds(P.n);
+  const rows = P.A.map((r, i) => `<div class="${cls}" style="--d:${(0.15 + i * 0.12).toFixed(2)}s">${expr(r, nm, kd)}<span class="op">${OPS[P.ops[i]]}</span>${fr(P.b[i])}</div>`).join('');
+  return { obj: `<span class="kw">${P.sense}</span>${P.sense === 'max' ? 'f' : 'z'} = ${expr(P.c, nm, kd)}`, rows,
+    nn: `${nm.length > 3 ? V('x1') + ', …, ' + V(nm.at(-1)) : nm.map(x => V(x)).join(', ')} ≥ 0` };
+}
+const isFeasSnap = (S, s) => s.basis.every((b, i) => S.kinds[b] !== 'a' || s.T[i][S.N].isZero());
+
+// ---------- 几何：可行多面体 ----------
+const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+function solve3(h1, h2, h3) {
+  const A = [h1.a, h2.a, h3.a], b = [h1.b, h2.b, h3.b];
+  const det = m => dot(m[0], cross(m[1], m[2]));
+  const D = det(A); if (Math.abs(D) < 1e-10) return null;
+  return [0, 1, 2].map(k => det(A.map((r, i) => r.map((v, j) => (j === k ? b[i] : v)))) / D);
+}
+function buildGeo(S) {
+  const P = S.P, n = P.n, xs = [];
+  S.phases.forEach(ph => { ph.iters.forEach(it => xs.push(it.snap.x, it.after.x)); xs.push(ph.final.x); });
+  S.events.forEach(e => xs.push(e.after.x));
+  (S.alt || []).forEach(a => a.x && xs.push(a.x));
+  if (n > 3) return { mode: 'bars', vmax: Math.max(1, ...xs.flat().map(q => q.num())) };
+  const pad = v => [0, 1, 2].map(j => (j < n ? (v[j].num ? v[j].num() : v[j]) : 0));
+  const H = [];
+  P.A.forEach((r, i) => {
+    const a = pad(r), b = P.b[i].num();
+    if (P.ops[i] !== '>=') H.push({ a, b, pl: 'c' + i });
+    if (P.ops[i] !== '<=') H.push({ a: a.map(v => -v), b: -b, pl: 'c' + i });
+  });
+  for (let j = 0; j < 3; j++) { const e = [0, 0, 0]; e[j] = 1; H.push({ a: e.map(v => -v), b: 0, pl: 'n' + j }); if (j >= n) H.push({ a: e, b: 0, pl: 'n' + j }); }
+  const tol = h => 1e-7 * (1 + Math.abs(h.b));
+  const enumV = M => {
+    const HH = H.concat([0, 1, 2].map(j => { const e = [0, 0, 0]; e[j] = 1; return { a: e, b: M, pl: 'm' + j }; }));
+    const V = [], seen = new Set();
+    for (let i = 0; i < HH.length; i++) for (let j = i + 1; j < HH.length; j++) for (let k = j + 1; k < HH.length; k++) {
+      const p = solve3(HH[i], HH[j], HH[k]); if (!p) continue;
+      if (!HH.every(h => dot(h.a, p) <= h.b + tol(h))) continue;
+      const key = p.map(v => Math.round(v * 1e6)).join(); if (seen.has(key)) continue; seen.add(key);
+      V.push({ p, act: new Set(HH.filter(h => Math.abs(dot(h.a, p) - h.b) < tol(h)).map(h => h.pl)) });
+    }
+    return { V, HH };
+  };
+  let mx = 0;
+  enumV(1e4).V.forEach(v => { if (v.p.every(c => c < 1e3)) mx = Math.max(mx, ...v.p); });
+  xs.forEach(x => (mx = Math.max(mx, ...pad(x))));
+  const M = Math.max(3, Math.ceil(mx * 1.3));
+  const { V, HH } = enumV(M);
+  const normal = {}; HH.forEach(h => (normal[h.pl] = h.a));
+  const planes = new Map();
+  V.forEach((v, i) => v.act.forEach(pl => { if (!planes.has(pl)) planes.set(pl, []); planes.get(pl).push(i); }));
+  const faces = [], edges = new Map();
+  planes.forEach((idx, pl) => {
+    if (idx.length < 3) return;
+    const nr = normal[pl], c = [0, 1, 2].map(k => idx.reduce((s, i) => s + V[i].p[k], 0) / idx.length);
+    const ax = [0, 1, 2].reduce((a, k) => (Math.abs(nr[k]) < Math.abs(nr[a]) ? k : a), 0);
+    const e = [0, 0, 0]; e[ax] = 1;
+    const u = cross(nr, e), w = cross(nr, u);
+    const ang = i => { const d = V[i].p.map((v, k) => v - c[k]); return Math.atan2(dot(d, w), dot(d, u)); };
+    idx = idx.slice().sort((a, b) => ang(a) - ang(b));
+    faces.push({ pl, idx, box: pl[0] === 'm' });
+    idx.forEach((a, t) => {
+      const b = idx[(t + 1) % idx.length], key = Math.min(a, b) + '-' + Math.max(a, b);
+      const clip = [...V[a].act].some(q => q[0] === 'm' && V[b].act.has(q));
+      if (!edges.has(key)) edges.set(key, { a, b, clip });
+    });
+  });
+  if (!faces.length && V.length === 2) edges.set('0-1', { a: 0, b: 1, clip: false });
+  return { mode: '3d', n, M, V, faces, edges: [...edges.values()], c: pad(S.cMin), pad };
+}
+
+// ---------- 分镜生成：一道题 → 一串节拍 ----------
+const DUR = { chapter: 4400, model: 4400, std: 7600, phase: 4200, new: 3800, sigma: 4800, enter: 3200, ratio: 4400, pivot: 3800,
+  update: 4400, optimal: 4000, w0: 4400, infeasible: 5400, strike: 4000, swap: 4600, unbounded: 6000, drive: 5200, drop: 5200,
+  result: 6800, alt: 6400 };
+function buildBeats(S, pi, total) {
+  const P = S.P, names = S.names, kinds = S.kinds, N = S.N, n = S.n;
+  const geo = buildGeo(S), B = [];
+  const zSym = P.sense === 'max' ? 'z = −f' : 'z';
+  const push = o => B.push(Object.assign({ pi, total, P, S, geo, dur: DUR[o.step || o.kind] }, o));
+  const trail = []; let cur = null, zh = [];
+  const visit = s => { if (cur) trail.push(cur); cur = { x: s.x, feas: isFeasSnap(S, s), basis: s.basis, cols: s.cols }; };
+  const tab = (step, s, pk, o) => push({ kind: 'tab', step, s, pk, trail: trail.slice(), cur, zh: zh.slice(), ...o });
+  const V2 = j => V(names[j], kinds[j]);
+  const features = [];
+  if (P.sense === 'max') features.push('max → min');
+  if (S.rows.some(r => r.flipped)) features.push('右端为负 ×(−1)');
+  if (P.ops.includes('=')) features.push('等式约束');
+  if (P.ops.includes('>=')) features.push('剩余变量');
+  if (P.ops.includes('<=')) features.push('松弛变量');
+  features.push(S.twoPhase ? '人工变量 · 两阶段' : '现成单位基 · 一阶段');
+
+  push({ kind: 'chapter', features });
+  push({ kind: 'model', say: `本题${P.sense === 'max' ? '求最大值' : '求最小值'}，${P.n} 个变量，${P.m} 条约束。` });
+
+  const s0 = S.phases[0].iters.length ? S.phases[0].iters[0].snap : S.phases[0].final;
+  const art = s0.basis.filter(b => kinds[b] === 'a'), given = s0.basis.filter(b => kinds[b] !== 'a');
+  let stdSay = '化为标准型：约束全部变成等式，右端非负。';
+  if (S.rows.some(r => r.flipped)) stdSay += '右端为负的约束先整行乘 −1，不等号随之反向。';
+  if (P.ops.includes('<=')) stdSay += '≤ 约束加松弛变量；';
+  if (P.ops.includes('>=')) stdSay += '≥ 约束减剩余变量；';
+  stdSay += art.length ? `没有现成单位列的行补上人工变量 ${art.map(V2).join('、')}。` : `${given.map(V2).join('、')} 的列组成单位阵，直接作初始基。`;
+  push({ kind: 'std', say: stdSay, s0 });
+
+  S.phases.forEach((ph, phi) => {
+    const pk = ph.key, isI = pk === 'I';
+    const zl = isI ? 'w' : 'z';
+    zh = [];
+    const first = ph.iters.length ? ph.iters[0].snap : ph.final;
+    if (S.twoPhase) push({ kind: 'phase', pk, s: first });
+    visit(first); zh.push(first.z);
+    if (phi === 0) {
+      tab('new', first, pk, { say: isI
+        ? `初始单纯形表。阶段一的目标是 w = ${art.map(V2).join(' + ')}，只计人工变量。w 降到 0 时人工变量全部为 0，即得到原问题的可行解。`
+        : `初始单纯形表。基变量 ${first.basis.map(V2).join('、')} 构成单位阵，基可行解即 b 列，c<sub>B</sub> 取它们的目标系数。` });
+    } else {
+      tab('swap', first, pk, { say: '阶段二：删去人工变量列，把 c<sub>j</sub> 行换回原目标系数，c<sub>B</sub> 随之更新，基保持不变。' });
+    }
+    const sigmaBeat = (s, k) => {
+      const kk = k ?? s.cols.filter(j => !s.basis.includes(j)).reduce((a, j) => (a < 0 || s.sigma[j].cmp(s.sigma[a]) > 0 ? j : a), -1);
+      const f = kk >= 0 ? `${sig(names[kk])} = c<sub>B</sub>·P<sub>${sidx(names[kk])}</sub> − c<sub>${sidx(names[kk])}</sub> = ${s.T.map((r, i) => `${par(s.cB[i])}·${par(r[kk])}`).join(' + ')} − ${par(s.cost[kk])} = <b>${fr(s.sigma[kk])}</b>` : '';
+      tab('sigma', s, pk, { say: `逐列计算检验数 σ<sub>j</sub> = c<sub>B</sub>·P<sub>j</sub> − c<sub>j</sub>，基变量的检验数恒为 0。σ<sub>j</sub> > 0 表示让 ${V('xj')} 增大还能使 ${zl} 下降。`, f });
+    };
+    ph.iters.forEach(it => {
+      const k = it.enter, r = it.leave, s = it.snap;
+      sigmaBeat(s, k);
+      tab('enter', s, pk, { k, say: `${sig(names[k])} = ${fr(s.sigma[k])} 是最大的正检验数，${V2(k)} 入基。${V2(k)} 每增加 1，${zl} 下降 ${fr(s.sigma[k])}。` });
+      const rs = it.ratios.map((t, i) => (t ? `${fr(s.T[i][N])}÷${fr(s.T[i][k])}` : null)).filter(Boolean);
+      tab('ratio', s, pk, { k, ratios: it.ratios, leave: r,
+        say: `最小比值检验：只对 ${V2(k)} 列的正系数算 θ = b<sub>i</sub> ÷ a<sub>i${sidx(names[k])}</sub>。θ 最小的是第 ${r + 1} 行，该行基变量 ${V2(it.leaveVar)} 出基${it.ratios[r].isZero() ? '（θ = 0，退化迭代）' : ''}。`,
+        f: `θ = min{ ${rs.join(',  ')} } = <b>${fr(it.ratios[r])}</b>` });
+      tab('pivot', s, pk, { k, leave: r, ops: it.ops, say: `主元 ${fr(it.pivotVal)}（第 ${r + 1} 行、${V2(k)} 列）。主元行除以主元，其余各行减去它的倍数，把 ${V2(k)} 列化成单位向量。`,
+        f: it.ops.map((op, i) => opTxt(op, i, r)).filter(Boolean).join('；  ') });
+      visit(it.after); zh.push(it.after.z);
+      const dz = s.z.sub(it.after.z);
+      tab('update', it.after, pk, { k, leave: r, ops: it.ops, prev: s,
+        say: it.ratios[r].isZero()
+          ? `θ = 0，属于退化迭代。基变量换了，基可行解不变，${zl} 仍为 ${fr(s.z)}。`
+          : `${V2(k)} 入基，${V2(it.leaveVar)} 出基，得到新的基可行解。${zl} 从 ${fr(s.z)} 降到 ${fr(it.after.z)}，降幅等于 θ·σ。`,
+        f: `${zl}′ = ${zl} − θ·${sig(names[k])} = ${fr(s.z)} − ${par(it.ratios[r])}·${par(s.sigma[k])} = <b>${fr(it.after.z)}</b>${dz.isZero() ? '' : ''}` });
+    });
+    const fin = ph.final;
+    if (ph.status === 'unbounded') {
+      sigmaBeat(fin, ph.enter);
+      tab('enter', fin, pk, { k: ph.enter, say: `${sig(names[ph.enter])} = ${fr(fin.sigma[ph.enter])} > 0，${V2(ph.enter)} 应当入基。` });
+      tab('unbounded', fin, pk, { k: ph.enter, say: `${V2(ph.enter)} 列的系数全部 ≤ 0，没有可以计算的 θ。${V2(ph.enter)} 无限增大时所有基变量仍非负，z → −∞，问题无界。` });
+      return;
+    }
+    sigmaBeat(fin);
+    if (isI) {
+      if (S.status === 'infeasible') { tab('infeasible', fin, pk, { say: `所有检验数 ≤ 0，阶段一已最优，但 w* = ${fr(fin.z)} > 0。人工变量不能全部为 0，原问题没有可行解。` }); return; }
+      tab('w0', fin, pk, { say: `所有检验数 ≤ 0，阶段一结束，w* = 0。人工变量全部为 0，原问题可行。${S.events.length ? '还有人工变量以 0 值留在基中，需要先处理。' : ''}` });
+      let last = fin;
+      S.events.forEach(ev => {
+        if (ev.type === 'drive') {
+          tab('drive', ev.before, pk, { k: ev.enter, leave: ev.row, say: `${V2(ev.art)} 还在基中，但取值为 0。该行 ${V2(ev.enter)} 的系数不为 0，以它为主元做一次退化换基，把 ${V2(ev.art)} 换出，目标值不变。` });
+          visit(ev.after);
+          tab('update', ev.after, pk, { k: ev.enter, leave: ev.row, ops: ev.ops, prev: ev.before, say: `${V2(ev.art)} 已离基。基可行解没有变化，只是换了一组基来表示它。` });
+        } else {
+          tab('drop', ev.before, pk, { leave: ev.row, say: `${V2(ev.art)} 所在行在所有原变量上的系数全为 0，这条约束可由其他约束线性表出，是冗余约束，删去这一行。` });
+        }
+        last = ev.after;
+      });
+      tab('strike', last, pk, { say: '划掉人工变量列，剩下的基作为阶段二的初始可行基。' });
+    } else tab('optimal', fin, pk, { say: `所有检验数 σ<sub>j</sub> ≤ 0，任何非基变量入基都不能使 z 下降，当前基可行解为最优解。` });
+  });
+
+  const totalIt = S.phases.reduce((a, p) => a + p.iters.length, 0);
+  const lastPh = S.phases.at(-1), fin = lastPh.final;
+  if (S.status === 'optimal') {
+    push({ kind: 'tab', step: 'result', s: fin, pk: lastPh.key, trail: trail.slice(), cur, zh: zh.slice(),
+      say: `最优解 x* = ${vecHTML(S.x)}，${P.sense === 'max' ? `max f = −z* = ${fr(S.f)}` : `min z = ${fr(S.z)}`}。共 ${totalIt} 次换基。` });
+    const alt = (S.alt || []).find(a => a.x && a.moved);
+    if (alt) push({ kind: 'tab', step: 'alt', s: fin, pk: lastPh.key, k: alt.k, alt, trail: trail.slice(), cur, zh: zh.slice(),
+      say: `非基变量 ${V2(alt.k)} 的检验数为 0。让它入基，z 不变，得到另一个最优顶点 ${vecHTML(alt.x)}。两点连线上的点都是最优解，本题有多重最优解。` });
+  } else if (S.status === 'unbounded') {
+    push({ kind: 'tab', step: 'result', s: fin, pk: lastPh.key, k: S.ray.enter, trail: trail.slice(), cur, zh: zh.slice(),
+      say: `结论：沿射线 ${V2(S.ray.enter)} → ∞ 一直可行，${P.sense === 'max' ? 'f → +∞' : 'z → −∞'}，问题无有限最优解。` });
+  } else {
+    push({ kind: 'tab', step: 'result', s: fin, pk: 'I', trail: trail.slice(), cur, zh: zh.slice(), say: '结论：可行域为空，问题无解。' });
+  }
+  return B;
+}
+function opTxt(op, i, r) {
+  if (!op) return '';
+  const R = k => `R<sub>${k + 1}</sub>`;
+  if (op.type === 'div') return op.by.eq(Q1) ? `${R(i)} 主元已为 1` : `${R(i)} ÷ ${par(op.by)}`;
+  const s = op.f.sgn(), a = s < 0 ? op.f.neg() : op.f;
+  return `${R(i)} ${s < 0 ? '+' : '−'} ${a.eq(Q1) ? '' : fr(a) + '·'}${R(r)}′`;
+}
+
+// ---------- 渲染 ----------
+let CUR = null; const TABPREV = {};
+function setView(id) { ['v-model', 'v-std', 'v-tab'].forEach(v => $('#' + v).classList.toggle('on', v === id)); }
+function renderModel(b) {
+  const m = modelHTML(b.P, 'rise');
+  $('#v-model').innerHTML = `<div class="model"><div class="rise">${m.obj}</div><div class="m-st rise" style="--d:.1s"><span class="kw">s.t.</span><div class="m-rows">${m.rows}</div></div><div class="m-nn rise" style="--d:.5s">${m.nn}</div></div>`;
+}
+function renderStd(b) {
+  const S = b.S, P = S.P, s0 = b.s0;
+  const obj = P.sense === 'max'
+    ? `<span class="rise"><span class="kw">max</span>f = ${expr(P.c, xNames(P.n), xKinds(P.n))}</span><span class="arrow rise" style="--d:.3s">⟹</span><span class="rise" style="--d:.5s"><span class="kw">min</span>z = −f = ${expr(S.cMin, xNames(P.n), xKinds(P.n))}</span>`
+    : `<span class="rise"><span class="kw">min</span>z = ${expr(S.cMin, xNames(P.n), xKinds(P.n))}</span><span class="muted rise" style="font-family:var(--f-body);font-size:17px;--d:.3s">已是求最小，保持不变</span>`;
+  const rows = S.rows.map((r, i) => {
+    const d0 = 0.5 + i * 0.55;
+    const left = `${expr(P.A[i], xNames(P.n), xKinds(P.n))}<span class="op">${OPS[P.ops[i]]}</span>${fr(P.b[i])}`;
+    const bj = s0.basis[i];
+    return `<div class="o rise" style="--d:${d0}s">${left}</div>
+      <div class="arrow rise" style="--d:${d0 + 0.15}s">${r.flipped ? '<span class="flip">×(−1)</span>' : '⟶'}</div>
+      <div class="s rise" style="--d:${d0 + 0.2}s">${expr(r.a, S.names, S.kinds, S.n, d0 + 0.5)}<span class="op">=</span>${fr(r.b)}</div>
+      <div class="bchip k-${S.kinds[bj]}" style="--d:${d0 + 1.1}s">初始基 ${V(S.names[bj], S.kinds[bj])}</div>`;
+  }).join('');
+  const used = [...new Set(S.kinds)].filter(k => k !== 'x');
+  $('#v-std').innerHTML = `<div class="std"><div class="std-obj">${obj}</div><div class="std-grid">${rows}</div>
+    <div class="legend rise" style="--d:${0.8 + S.rows.length * 0.55}s">${used.map(k => `<span class="k-${k}"><b>${S.names.filter((_, j) => S.kinds[j] === k).map(nm => V(nm, k)).join(' ')}</b> ${KIND[k]}</span>`).join('')}
+    <span>全部变量 ≥ 0</span></div></div>`;
+}
+
+function renderTab(b, animate) {
+  const s = b.s, S = b.S, names = S.names, kinds = S.kinds, N = S.N, step = b.step;
+  const cols = s.cols, m = s.T.length, nc = cols.length;
+  const showSig = !['new', 'update', 'swap'].includes(step);
+  const thMode = step === 'ratio' ? 'ratio' : ['pivot', 'update'].includes(step) ? 'ops' : step === 'unbounded' ? 'none' : '';
+  const prevKey = TABPREV.key, key = b.pi;
+  const prev = prevKey === key ? TABPREV.vals : {};
+  const vals = {}, cells = [];
+  const C = (row, col, html, cls = '', id, extra = '') => {
+    let c = cls;
+    if (id) { vals[id] = html; if (animate && id in prev && prev[id] !== html && (step === 'update' || step === 'swap')) c += ' chg'; }
+    cells.push(`<div class="c ${c}" style="grid-row:${row};grid-column:${col};${extra}">${html}</div>`);
+  };
+  const rowOf = i => 3 + i, sgRow = 3 + m, colOf = t => 3 + t, bCol = 3 + nc, thCol = 4 + nc;
+  // 表头
+  C(1, 2, 'c<sub>j</sub>', 'hc lab');
+  cols.forEach((j, t) => C(1, colOf(t), fr(s.cost[j]), 'hc', 'c' + j, `--d:${(t * 0.05).toFixed(2)}s`));
+  C(2, 1, 'c<sub>B</sub>', 'hv lab'); C(2, 2, '基', 'hv lab');
+  cols.forEach((j, t) => C(2, colOf(t), V(names[j], kinds[j]), 'hv' + (step === 'strike' && kinds[j] === 'a' ? ' strk' : '')));
+  C(2, bCol, 'b', 'hv bcol'); C(2, thCol, thMode === 'ops' ? '<span class="lab">行变换</span>' : thMode ? 'θ' : '', 'hv', null, 'justify-content:flex-start;padding-left:16px;font-family:var(--f-math)');
+  // 行
+  const flipDelay = i => (step === 'update' ? (i === b.leave ? 0.1 : 0.55 + 0.16 * i) : 0.05 * i);
+  s.T.forEach((r, i) => {
+    const rr = rowOf(i), d = `--d:${flipDelay(i).toFixed(2)}s`;
+    C(rr, 1, fr(s.cB[i]), 'row', 'cb' + i, d);
+    C(rr, 2, V(names[s.basis[i]], kinds[s.basis[i]]), 'row bv', 'bv' + i, d);
+    cols.forEach((j, t) => {
+      const pv = ['pivot', 'drive'].includes(step) && i === b.leave && j === b.k;
+      C(rr, colOf(t), fr(r[j]), 'row' + (pv ? ' pv' : '') + (step === 'strike' && kinds[j] === 'a' ? ' strk' : ''), `r${i}c${j}`, `${d};${step === 'new' ? '' : ''}`);
+    });
+    C(rr, bCol, fr(r[N]), 'row bcol', `r${i}b`, d);
+    let th = '';
+    if (thMode === 'ratio') th = b.ratios[i] ? `<span>${fr(r[N])} ÷ ${fr(r[b.k])} = ${fr(b.ratios[i])}</span>` : '<span>—</span>';
+    if (thMode === 'none') th = '<span>—</span>';
+    if (thMode === 'ops') th = opTxt(b.ops[i], i, b.leave) || '<span class="muted">不变</span>';
+    C(rr, thCol, th, (thMode === 'ops' ? 'row opc rv' : 'row thc rv') + (thMode === 'ratio' && i === b.leave ? ' min' : ''), null, `--d:${(0.25 + i * 0.35).toFixed(2)}s`);
+  });
+  // 检验数行
+  C(sgRow, 2, 'σ<sub>j</sub>', 'sg lab');
+  const allGood = ['optimal', 'w0', 'result', 'alt', 'strike', 'infeasible'].includes(step);
+  cols.forEach((j, t) => {
+    const v = s.sigma[j];
+    let cls = 'sg';
+    if (!showSig) cls += ' hidden-sg';
+    else if (step === 'sigma') cls += ' rv';
+    if (showSig && v.sgn() > 0) cls += ' pos';
+    if (showSig && allGood && v.sgn() <= 0) cls += ' good';
+    if (step === 'strike' && kinds[j] === 'a') cls += ' strk';
+    C(sgRow, colOf(t), fr(v), cls, showSig ? 's' + j : null, `--d:${(0.15 + t * 0.12).toFixed(2)}s`);
+  });
+  C(sgRow, bCol, showSig ? `${b.pk === 'I' ? 'w' : 'z'}=${fr(s.z)}` : '', 'sg bcol zc' + (step === 'sigma' ? ' rv' : ''), null, `--d:${(0.2 + nc * 0.12).toFixed(2)}s;font-size:19px`);
+  // 色带与特效
+  const bands = [];
+  const kt = cols.indexOf(b.k);
+  if (kt >= 0 && ['enter', 'ratio', 'pivot', 'update', 'unbounded', 'drive', 'alt', 'result'].includes(step) && !(step === 'result' && S.status !== 'unbounded'))
+    bands.push(`<div class="band-col${step === 'update' ? ' fade' : ''}" style="grid-row:1/${sgRow + 1};grid-column:${colOf(kt)}"></div>`);
+  if (b.leave != null && ['ratio', 'pivot', 'update', 'drive', 'drop'].includes(step))
+    bands.push(`<div class="band-row${step === 'drop' ? ' drop' : ''}${step === 'update' ? ' fade' : ''}" style="grid-row:${rowOf(b.leave)};grid-column:1/${thCol + 1}"></div>`);
+  if (step === 'sigma') bands.push(`<div class="scan" style="grid-row:${sgRow};grid-column:${colOf(0)}/${colOf(nc)}"></div>`);
+  if (step === 'strike') cols.forEach((j, t) => kinds[j] === 'a' && bands.push(`<div class="strike-line" style="grid-row:1/${sgRow + 1};grid-column:${colOf(t)};align-self:stretch;--d:${t * 0.1}s"></div>`));
+  const gtc = `64px 76px repeat(${nc}, minmax(0,1fr)) 96px ${thMode ? 230 : 120}px`;
+  $('#v-tab').innerHTML = `<div class="tab${step === 'new' && animate ? ' enter' : ''}" style="grid-template-columns:${gtc};grid-template-rows:36px 50px repeat(${m},66px) 66px">${bands.join('')}${cells.join('')}</div>`;
+  if (step === 'new' && animate) $('#v-tab').querySelectorAll('.c').forEach((c, i) => c.style.setProperty('--d', (0.02 * i).toFixed(2) + 's'));
+  TABPREV.key = key; TABPREV.vals = vals;
+  // 结果卡
+  const R = $('#result');
+  if (step === 'result' || step === 'alt') {
+    const P = S.P;
+    let h;
+    if (S.status === 'optimal') {
+      h = `<div class="r-k">${step === 'alt' ? '另一个最优顶点' : '最优解'}</div>
+        <div class="r-x">x* = ${vecHTML(step === 'alt' ? b.alt.x : S.x)}</div>
+        <div class="r-z">${P.sense === 'max' ? 'max f = ' : 'min z = '}${fr(S.f)}</div>
+        <div class="r-n">${step === 'alt' ? '两个最优顶点之间的线段上，目标值处处相同。' : `共 ${S.phases.map(p => `${p.title} ${p.iters.length} 次`).join('，')}换基。${P.sense === 'max' ? '由 z* = ' + fr(S.z) + ' 取负得到 f*。' : ''}`}</div>`;
+    } else if (S.status === 'unbounded') {
+      h = `<div class="r-k">无有限最优解</div><div class="r-z bad">${P.sense === 'max' ? 'f → +∞' : 'z → −∞'}</div><div class="r-n">沿 ${V(names[S.ray.enter], kinds[S.ray.enter])} 方向的射线始终可行，目标值无限改善。</div>`;
+    } else h = `<div class="r-k">无可行解</div><div class="r-z bad">w* = ${fr(S.w)} &gt; 0</div>`;
+    R.innerHTML = h; R.classList.add('on');
+  } else R.classList.remove('on');
+}
+
+// ---------- 几何视图 ----------
+const cv = $('#geo'), ctx = cv.getContext('2d'), GW = 512, GH = 340;
+cv.width = GW * 2; cv.height = GH * 2; ctx.scale(2, 2);
+const G = { yaw: -2.3, pitch: 0.5, drag: null, geo: null, b: null, cur: null, tgt: null, bars: {}, t0: 0, last: 0 };
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+cv.addEventListener('pointerdown', e => { G.drag = { x: e.clientX, y: e.clientY, yaw: G.yaw, pitch: G.pitch }; cv.setPointerCapture(e.pointerId); cv.style.cursor = 'grabbing'; });
+cv.addEventListener('pointermove', e => { if (!G.drag) return; G.yaw = G.drag.yaw + (e.clientX - G.drag.x) * 0.01; G.pitch = Math.max(-0.2, Math.min(1.45, G.drag.pitch + (e.clientY - G.drag.y) * 0.008)); });
+cv.addEventListener('pointerup', () => { G.drag = null; cv.style.cursor = 'grab'; });
+function setGeo(b) {
+  G.b = b; G.t0 = performance.now();
+  const geo = b.geo;
+  if (G.geo !== geo) { G.geo = geo; G.cur = null; G.bars = {}; }
+  $('#geoTag').textContent = !geo ? '' : geo.mode === 'bars' ? `基可行解各分量 · ${b.S.N} 维，无法直接画出` : `可行域 · (${b.P.n === 2 ? 'x₁, x₂' : 'x₁, x₂, x₃'}) 空间${geo.M ? '，超出 ' + geo.M + ' 的部分已截断' : ''}`;
+  $('#geoLegend').style.visibility = geo && geo.mode === '3d' ? 'visible' : 'hidden';
+  if (geo && b.cur) { G.tgt = geo.mode === '3d' ? geo.pad(b.cur.x) : null; if (!G.cur && G.tgt) G.cur = G.tgt.slice(); }
+}
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const COL = {}; ['--ink', '--muted', '--blue', '--red', '--green', '--amber', '--teal', '--violet', '--line'].forEach(v => (COL[v.slice(2)] = css(v)));
+const rgba = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`; };
+function proj(p) {
+  const M = G.geo.M, X = p[0] / M - 0.42, Y = p[1] / M - 0.42, Z = p[2] / M - 0.3;
+  const cy = Math.cos(G.yaw), sy = Math.sin(G.yaw), cp = Math.cos(G.pitch), sp = Math.sin(G.pitch);
+  const x1 = X * cy - Y * sy, y1 = X * sy + Y * cy;
+  const up = y1 * sp + Z * cp, depth = y1 * cp - Z * sp, f = 1 / (1 + 0.16 * depth), S = 150;
+  return [GW / 2 + x1 * S * f, GH / 2 + 10 - up * S * f, depth];
+}
+function niceStep(M) { const r = M / 4, p = 10 ** Math.floor(Math.log10(r)), m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : 5) * p; }
+function arrowHead(a, b, col, size = 9) {
+  const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(b[0], b[1]);
+  ctx.lineTo(b[0] - size * Math.cos(ang - 0.4), b[1] - size * Math.sin(ang - 0.4));
+  ctx.lineTo(b[0] - size * Math.cos(ang + 0.4), b[1] - size * Math.sin(ang + 0.4)); ctx.fill();
+}
+function planePoly(c, v, M) {
+  const pts = [], C = [[0, 0, 0], [M, 0, 0], [0, M, 0], [0, 0, M], [M, M, 0], [M, 0, M], [0, M, M], [M, M, M]];
+  const E = [[0, 1], [0, 2], [0, 3], [1, 4], [1, 5], [2, 4], [2, 6], [3, 5], [3, 6], [4, 7], [5, 7], [6, 7]];
+  E.forEach(([i, j]) => { const a = dot(c, C[i]) - v, b = dot(c, C[j]) - v; if (a * b <= 0 && a !== b) { const t = a / (a - b); pts.push(C[i].map((x, k) => x + t * (C[j][k] - x))); } });
+  if (pts.length < 3) return null;
+  const ce = [0, 1, 2].map(k => pts.reduce((s, p) => s + p[k], 0) / pts.length);
+  const ax = [0, 1, 2].reduce((a, k) => (Math.abs(c[k]) < Math.abs(c[a]) ? k : a), 0), e = [0, 0, 0]; e[ax] = 1;
+  const u = cross(c, e), w = cross(c, u);
+  return pts.sort((p, q) => { const d1 = p.map((x, k) => x - ce[k]), d2 = q.map((x, k) => x - ce[k]); return Math.atan2(dot(d1, w), dot(d1, u)) - Math.atan2(dot(d2, w), dot(d2, u)); });
+}
+const fmtN = v => (Math.abs(v - Math.round(v)) < 1e-9 ? String(Math.round(v)) : v.toFixed(2));
+function draw3d(now) {
+  const geo = G.geo, b = G.b, M = geo.M;
+  // 地面网格与坐标轴
+  const st = niceStep(M);
+  ctx.lineWidth = 1; ctx.strokeStyle = rgba(COL.blue, 0.08);
+  for (let t = 0; t <= M + 1e-9; t += st) {
+    let a = proj([t, 0, 0]), c = proj([t, M, 0]); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+    a = proj([0, t, 0]); c = proj([M, t, 0]); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+  }
+  const O = proj([0, 0, 0]);
+  ['x₁', 'x₂', 'x₃'].forEach((lab, k) => {
+    if (k >= geo.n && geo.n === 2) return;
+    const e = [0, 0, 0]; e[k] = M * 1.12; const P2 = proj(e);
+    ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(O[0], O[1]); ctx.lineTo(P2[0], P2[1]); ctx.stroke();
+    arrowHead(O, P2, COL.ink);
+    ctx.fillStyle = COL.ink; ctx.font = 'italic 17px "STIX Two Text", serif'; ctx.fillText(lab, P2[0] + 6, P2[1] - 4);
+    ctx.fillStyle = COL.muted; ctx.font = '11px "JetBrains Mono", monospace';
+    for (let t = st; t <= M + 1e-9; t += st) { const e2 = [0, 0, 0]; e2[k] = t; const q = proj(e2); ctx.fillText(fmtN(t), q[0] + 3, q[1] + 12); }
+  });
+  if (!geo.V.length) { ctx.fillStyle = COL.red; ctx.font = '16px "Noto Sans SC", sans-serif'; ctx.fillText('可行域为空', GW / 2 - 40, GH / 2); return; }
+  // 面
+  const PV = geo.V.map(v => proj(v.p));
+  geo.faces.map(f => ({ f, d: f.idx.reduce((s, i) => s + PV[i][2], 0) / f.idx.length })).sort((a, b) => b.d - a.d).forEach(({ f }) => {
+    ctx.beginPath(); f.idx.forEach((i, t) => (t ? ctx.lineTo(PV[i][0], PV[i][1]) : ctx.moveTo(PV[i][0], PV[i][1]))); ctx.closePath();
+    ctx.fillStyle = f.box ? rgba(COL.blue, 0.035) : rgba(COL.blue, 0.11); ctx.fill();
+  });
+  geo.edges.forEach(e => {
+    const a = PV[e.a], c = PV[e.b];
+    ctx.setLineDash(e.clip ? [4, 5] : []); ctx.strokeStyle = e.clip ? rgba(COL.blue, 0.35) : rgba(COL.ink, 0.75); ctx.lineWidth = e.clip ? 1 : 1.6;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  PV.forEach((p, i) => { if ([...geo.V[i].act].some(q => q[0] === 'm')) return; ctx.fillStyle = COL.ink; ctx.beginPath(); ctx.arc(p[0], p[1], 2.6, 0, 7); ctx.fill(); });
+  const tl = Math.min(1, (now - G.t0) / 1800), ease = 1 - (1 - tl) ** 3;
+  // 目标等值面扫到最优顶点
+  if (b && b.kind === 'tab' && ['result', 'alt', 'optimal'].includes(b.step) && b.S.status === 'optimal') {
+    const z1 = b.S.z.num(), zs = b.trail.length ? dot(geo.c, geo.pad(b.trail[0].x)) : z1;
+    const z0 = b.step === 'result' ? (zs !== z1 ? zs : z1 + Math.abs(z1) * 0.5 + 2) : z1;
+    const v = z0 + (z1 - z0) * (b.step === 'result' ? ease : 1);
+    const poly = planePoly(geo.c, v, M);
+    if (poly) {
+      const pp = poly.map(proj); ctx.beginPath(); pp.forEach((p, t) => (t ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath();
+      ctx.fillStyle = rgba(COL.green, 0.14); ctx.fill(); ctx.strokeStyle = rgba(COL.green, 0.8); ctx.lineWidth = 1.4; ctx.stroke();
+      const lp = pp.reduce((a, p) => (p[0] > a[0] ? p : a)); ctx.fillStyle = COL.green; ctx.font = '13px "JetBrains Mono", monospace'; ctx.fillText(`z = ${fmtN(v)}`, lp[0] - 70, lp[1] - 8);
+    }
+  }
+  // 多重最优线段
+  if (b && b.step === 'alt') {
+    const a = proj(geo.pad(b.S.x)), c0 = proj(geo.pad(b.alt.x)), c = [a[0] + (c0[0] - a[0]) * ease, a[1] + (c0[1] - a[1]) * ease];
+    ctx.strokeStyle = COL.green; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]); ctx.stroke(); ctx.lineCap = 'butt';
+    ctx.fillStyle = COL.green; ctx.beginPath(); ctx.arc(c[0], c[1], 7, 0, 7); ctx.fill();
+  }
+  // 无界射线
+  if (b && b.kind === 'tab' && ['unbounded', 'result'].includes(b.step) && b.S.status === 'unbounded') {
+    const d = geo.pad(b.S.ray.d.slice(0, b.S.n)), x = geo.pad(b.S.final.x);
+    let t = Infinity; d.forEach((v, k) => { if (v > 1e-12) t = Math.min(t, (M * 1.05 - x[k]) / v); });
+    if (isFinite(t)) {
+      const a = proj(x), e = proj(x.map((v, k) => v + d[k] * t * ease));
+      ctx.setLineDash([8, 6]); ctx.strokeStyle = COL.red; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(e[0], e[1]); ctx.stroke(); ctx.setLineDash([]);
+      arrowHead(a, e, COL.red, 13); ctx.fillStyle = COL.red; ctx.font = 'bold 22px "STIX Two Text", serif'; ctx.fillText('∞', e[0] + 8, e[1]);
+    }
+  }
+  // 迭代路径
+  if (b && b.cur && G.cur) {
+    const pts = b.trail.map(t => ({ p: proj(geo.pad(t.x)), feas: t.feas }));
+    const cp = proj(G.cur);
+    const all = pts.concat([{ p: cp, feas: b.cur.feas }]);
+    for (let i = 1; i < all.length; i++) {
+      const a = all[i - 1].p, c = all[i].p, feas = all[i - 1].feas && all[i].feas;
+      ctx.setLineDash(feas ? [] : [6, 5]); ctx.strokeStyle = feas ? COL.blue : COL.amber; ctx.lineWidth = 3.2;
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(c[0], c[1]); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    pts.forEach(t => { ctx.beginPath(); ctx.arc(t.p[0], t.p[1], 5, 0, 7); if (t.feas) { ctx.fillStyle = COL.blue; ctx.fill(); } else { ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = COL.amber; ctx.lineWidth = 2.4; ctx.stroke(); } });
+    const pulse = reduce ? 0 : (now / 1100) % 1;
+    ctx.strokeStyle = rgba(COL.red, 0.7 * (1 - pulse)); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cp[0], cp[1], 8 + pulse * 18, 0, 7); ctx.stroke();
+    ctx.fillStyle = b.cur.feas ? COL.red : '#fff'; ctx.beginPath(); ctx.arc(cp[0], cp[1], 8, 0, 7); ctx.fill();
+    if (!b.cur.feas) { ctx.strokeStyle = COL.red; ctx.lineWidth = 3; ctx.stroke(); }
+    const lab = '(' + b.cur.x.slice(0, b.S.n).map(q => q.toString()).join(', ') + ')';
+    ctx.font = '600 14px "JetBrains Mono", monospace'; const w = ctx.measureText(lab).width;
+    ctx.fillStyle = 'rgba(255,255,255,.88)'; ctx.fillRect(cp[0] + 12, cp[1] - 30, w + 12, 22);
+    ctx.fillStyle = COL.ink; ctx.fillText(lab, cp[0] + 18, cp[1] - 14);
+  }
+  // 下降方向
+  const c = geo.c, cn = Math.hypot(...c);
+  if (cn > 0) {
+    const base = [M * 0.9, M * 0.9, M * 0.85].map((v, k) => (k < geo.n ? v : 0)), d = c.map(v => (-v / cn) * M * 0.32);
+    const a = proj(base), e = proj(base.map((v, k) => v + d[k]));
+    ctx.strokeStyle = COL.teal; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(e[0], e[1]); ctx.stroke(); arrowHead(a, e, COL.teal, 11);
+    ctx.fillStyle = COL.teal; ctx.font = '13px "Noto Sans SC", sans-serif'; ctx.fillText('−c：z 下降方向', e[0] + 8, e[1] + 4);
+  }
+}
+function drawBars(now, dt) {
+  const b = G.b; if (!b || !b.s) return;
+  const s = b.s, S = b.S, cols = s.cols, vmax = G.geo.vmax;
+  const L = 50, R = GW - 24, T = 44, Bt = GH - 56, w = (R - L) / cols.length;
+  ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(L - 10, Bt); ctx.lineTo(R, Bt); ctx.stroke();
+  ctx.font = '11px "JetBrains Mono", monospace'; ctx.fillStyle = COL.muted;
+  const st = niceStep(vmax);
+  for (let t = st; t <= vmax + 1e-9; t += st) { const y = Bt - (t / vmax) * (Bt - T); ctx.strokeStyle = rgba(COL.blue, 0.08); ctx.beginPath(); ctx.moveTo(L - 10, y); ctx.lineTo(R, y); ctx.stroke(); ctx.fillText(fmtN(t), 12, y + 4); }
+  cols.forEach((j, t) => {
+    const nm = S.names[j], tgt = s.x[j].num(), k = S.kinds[j];
+    const cur = (G.bars[nm] ?? 0); const v = cur + (tgt - cur) * (1 - Math.exp(-dt * 5)); G.bars[nm] = v;
+    const h = (v / vmax) * (Bt - T), x = L + t * w + w * 0.18, bw = w * 0.64;
+    const basic = s.basis.includes(j);
+    const col = { x: COL.blue, s: COL.teal, e: COL.violet, a: COL.amber }[k];
+    ctx.fillStyle = basic ? col : rgba(col, 0.25); ctx.fillRect(x, Bt - h, bw, h);
+    if (basic) { ctx.fillStyle = COL.ink; ctx.font = '600 13px "JetBrains Mono", monospace'; const lab = s.x[j].toString(); ctx.fillText(lab, x + bw / 2 - ctx.measureText(lab).width / 2, Bt - h - 8); }
+    ctx.fillStyle = basic ? COL.ink : COL.muted; ctx.font = 'italic 16px "STIX Two Text", serif'; const lab = subTxt(nm); ctx.fillText(lab, x + bw / 2 - ctx.measureText(lab).width / 2, Bt + 22);
+    if (basic) { ctx.fillStyle = COL.red; ctx.font = '11px "Noto Sans SC", sans-serif'; ctx.fillText('基', x + bw / 2 - 6, Bt + 40); }
+  });
+}
+function frame(now) {
+  const dt = Math.min(0.05, (now - (G.last || now)) / 1000); G.last = now;
+  if (!G.drag && !reduce) G.yaw += dt * 0.09;
+  if (G.cur && G.tgt) G.cur = G.cur.map((v, k) => v + (G.tgt[k] - v) * (1 - Math.exp(-dt * 4)));
+  ctx.clearRect(0, 0, GW, GH);
+  if (G.geo && G.b && G.b.kind !== 'intro' && G.b.kind !== 'finale') (G.geo.mode === '3d' ? draw3d : drawBars)(now, dt);
+  if (PL.beats.length) updateProgress();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// ---------- 目标值面板 ----------
+function setZ(b) {
+  const v = $('#zm-v'), h = $('#zm-h'), l = $('#zm-l');
+  if (b.kind !== 'tab') { l.textContent = '目标值'; v.innerHTML = '<span class="muted">—</span>'; h.textContent = ''; return; }
+  const zl = b.pk === 'I' ? 'w' : 'z';
+  l.textContent = b.pk === 'I' ? '阶段一目标 w（人工变量之和）' : b.P.sense === 'max' ? '目标值 z = −f' : '目标值 z';
+  const html = `${zl} = ${fr(b.s.z)}`;
+  if (v.dataset.k !== html) { v.innerHTML = `<span class="say-in" style="color:${b.pk === 'I' ? COL.amber : COL.blue}">${html}</span>`; v.dataset.k = html; }
+  h.innerHTML = '路径：' + b.zh.map((q, i) => (i === b.zh.length - 1 ? `<b>${q}</b>` : q)).join(' → ');
+}
+
+// ---------- 幕布 ----------
+let ovTimer = null;
+function overlay(html) {
+  const ov = $('#ov'); clearTimeout(ovTimer);
+  if (html == null) {
+    if (ov.classList.contains('in')) { ov.classList.remove('in'); ov.classList.add('out'); ovTimer = setTimeout(() => ov.classList.remove('out'), 800); }
+    return;
+  }
+  ov.querySelector('.sheet').innerHTML = html;
+  ov.classList.remove('in', 'out'); void ov.offsetWidth; ov.classList.add('in');
+}
+function chapterHTML(b) {
+  const P = b.P, m = modelHTML(P);
+  const num = String(b.pi + 1).padStart(2, '0');
+  return `<div class="ch"><div class="ch-num rise">${num[0]}<span>${num[1]}</span></div><div>
+    <div class="ch-group rise" style="--d:.1s">${P.group}</div><div class="ch-title rise" style="--d:.18s">${P.title}</div>
+    <div class="ch-model rise" style="--d:.3s"><div>${m.obj}</div>${m.rows}</div>
+    <div class="ch-tags rise" style="--d:.5s">${b.features.map((f, i) => `<span class="${i === b.features.length - 1 ? 'm' : ''}">${f}</span>`).join('')}</div></div>
+    <div class="ch-count">${num} / ${String(b.total).padStart(2, '0')}</div></div>`;
+}
+function phaseHTML(b) {
+  const S = b.S, s = b.s;
+  if (b.pk === 'I') {
+    const arts = S.names.filter((_, j) => S.kinds[j] === 'a');
+    return `<div class="phs"><div class="phs-k rise" style="color:var(--amber)">阶段一</div>
+      <div class="phs-t rise" style="--d:.15s"><span class="kw">min</span>w = ${arts.map(a => V(a, 'a')).join(' + ')}</div>
+      <div class="phs-d rise" style="--d:.3s">先求解这个辅助问题。若 w 能降到 0，人工变量全部为 0，此时的基就是原问题的一个可行基。</div></div>`;
+  }
+  return `<div class="phs"><div class="phs-k rise" style="color:var(--blue)">阶段二</div>
+    <div class="phs-t rise" style="--d:.15s"><span class="kw">min</span>z = ${expr(S.cMin, xNames(S.n), xKinds(S.n))}</div>
+    <div class="phs-d rise" style="--d:.3s">换回原目标函数，从阶段一得到的可行基出发继续迭代。</div></div>`;
+}
+function introHTML() {
+  const rules = [['标准化', '化为 min，约束变等式、右端非负；补松弛、剩余、人工变量'], ['检验数', 'σ<sub>j</sub> = c<sub>B</sub>B<sup>−1</sup>P<sub>j</sub> − c<sub>j</sub>，基变量恒为 0'],
+    ['入基', '取最大的正 σ<sub>j</sub> 对应的变量'], ['出基', '按最小比值 θ 确定，保证新解仍然可行'], ['判优', '全部 σ<sub>j</sub> ≤ 0 时，当前解为全局极小']];
+  return `<div class="phs" style="padding:0 110px"><div class="ch-group rise">运筹学 · 线性规划 · ${PL.list.length} 道习题</div>
+    <div class="big-title rise" style="--d:.1s">单纯形法<em>习题演算</em></div>
+    <div class="phs-d rise" style="--d:.25s;margin-top:14px">线性规划若有最优解，必能在可行域的某个顶点取到。单纯形法从一个基可行解出发，每次换一个基变量，移到相邻顶点，直到检验数全部 ≤ 0。</div>
+    <div class="rules">${rules.map((r, i) => `<div class="rule rise" style="--d:${0.45 + i * 0.12}s"><div class="n">0${i + 1}</div><div class="t">${r[0]}</div><div class="d">${r[1]}</div></div>`).join('')}</div></div>`;
+}
+function finaleHTML() {
+  const st = { optimal: ['最优', 'var(--green)'], unbounded: ['无界', 'var(--red)'], infeasible: ['无解', 'var(--muted)'] };
+  return `<div class="fin"><div class="ch-group rise">全部 ${PL.list.length} 题 · 结果一览</div><div class="big-title rise" style="--d:.1s;font-size:76px">结果汇总</div>
+    <div class="fin-grid">${PL.list.map((S, i) => {
+      const P = S.P, t = st[S.status];
+      const f = S.status === 'optimal' ? `${P.sense === 'max' ? 'max' : 'min'} ${fr(S.f)}` : S.status === 'unbounded' ? (P.sense === 'max' ? 'f→+∞' : 'z→−∞') : '—';
+      return `<div class="fin-card rise" style="--d:${(0.3 + i * 0.06).toFixed(2)}s"><div class="t">${P.title}</div><span class="s" style="background:${t[1]}">${t[0]}${S.alt && S.alt.some(a => a.moved) ? ' · 多重最优' : ''}</span>
+        <div class="f">${f}</div><div class="x">${S.status === 'optimal' ? 'x* = ' + vecHTML(S.x) : S.twoPhase ? '两阶段' : '单纯形'}</div></div>`;
+    }).join('')}</div></div>`;
+}
+
+// ---------- 播放器 ----------
+const PL = { list: [], beats: [], i: 0, playing: false, speed: 1, timer: null, t0: 0, pos: 0, starts: [] };
+// ---------- 求解过程（全部单纯形表） ----------
+function renderProcess(pi) {
+  const S = PL.list[pi], names = S.names, kinds = S.kinds, N = S.N, blocks = [];
+  PL.procSnaps = [];
+  $('#proc-title').textContent = S.P.title;
+  const Vn = j => V(names[j], kinds[j]);
+  const beatOf = s => { const i = PL.beats.findIndex(b => b.kind === 'tab' && b.s === s && ['sigma', 'drive', 'drop'].includes(b.step)); return i >= 0 ? i : PL.beats.findIndex(b => b.s === s); };
+  const add = (s, title, note, pk, pv) => {
+    PL.procSnaps.push(s);
+    blocks.push(`<div class="pblk" data-beat="${beatOf(s)}"><div class="ph">${title}</div><div style="overflow-x:auto"><table class="ptab"><thead><tr><th>基</th><th>c<sub>B</sub></th>${s.cols.map(j => `<th>${Vn(j)}</th>`).join('')}<th>b</th></tr></thead><tbody>${
+      s.T.map((r, i) => `<tr><td>${Vn(s.basis[i])}</td><td>${fr(s.cB[i])}</td>${s.cols.map(j => `<td class="${pv && pv[0] === i && pv[1] === j ? 'pv' : ''}">${fr(r[j])}</td>`).join('')}<td>${fr(r[N])}</td></tr>`).join('')
+    }<tr class="sg"><td>σ</td><td></td>${s.cols.map(j => `<td class="${s.sigma[j].sgn() > 0 ? 'pos' : ''}">${fr(s.sigma[j])}</td>`).join('')}<td>${pk === 'I' ? 'w' : 'z'} = ${fr(s.z)}</td></tr></tbody></table></div>${note ? `<div class="pn">${note}</div>` : ''}</div>`);
+  };
+  // 标准型
+  const P = S.P;
+  blocks.push(`<div class="pblk" style="cursor:default"><div class="ph">标准型${P.sense === 'max' ? '（max f 化为 min z = −f）' : ''}</div><div class="pstd"><span class="kw">min</span>z = ${expr(S.cMin, xNames(S.n), xKinds(S.n))}${S.rows.map(r => `<div>${expr(r.a, names, kinds)}<span class="op">=</span>${fr(r.b)}${r.flipped ? ' <span class="muted" style="font-size:13px">（原式 ×(−1)）</span>' : ''}</div>`).join('')}<div class="muted" style="font-size:14px">全部变量 ≥ 0</div></div></div>`);
+  PL.procSnaps.push(null);
+  S.phases.forEach(ph => {
+    let no = 0;
+    const pre = S.twoPhase ? ph.title + ' ' : '';
+    ph.iters.forEach(it => {
+      const s = it.snap, k = it.enter, r = it.leave;
+      const th = it.ratios.map((t, i) => (t ? `${fr(s.T[i][N])}÷${fr(s.T[i][k])}` : null)).filter(Boolean).join(', ');
+      add(s, `${pre}第 ${no++} 张表`, `${Vn(k)} 入基（${sig(names[k])} = ${fr(s.sigma[k])}），θ = min{${th}} = ${fr(it.ratios[r])}，${Vn(it.leaveVar)} 出基，主元 ${fr(it.pivotVal)}。`, ph.key, [r, k]);
+    });
+    const f = ph.final;
+    let note;
+    if (ph.status === 'unbounded') note = `${Vn(ph.enter)} 的 σ = ${fr(f.sigma[ph.enter])} > 0，但该列系数全部 ≤ 0，问题无界。`;
+    else if (ph.key === 'I') note = S.status === 'infeasible' ? `全部 σ ≤ 0，w* = ${fr(f.z)} > 0，原问题无可行解。` : `全部 σ ≤ 0，w* = 0，阶段一结束。`;
+    else note = `全部 σ ≤ 0，最优。`;
+    add(f, `${pre}第 ${no} 张表`, note, ph.key);
+    if (ph.key === 'I') S.events.forEach(ev => {
+      if (ev.type === 'drive') add(ev.before, '人工变量换出', `${Vn(ev.art)} 以 0 值留在基中，以第 ${ev.row + 1} 行 ${Vn(ev.enter)} 列为主元换出。`, 'I', [ev.row, ev.enter]);
+      else add(ev.before, '删去冗余行', `${Vn(ev.art)} 所在的第 ${ev.row + 1} 行在原变量上系数全为 0，删去该行。`, 'I');
+    });
+  });
+  const res = S.status === 'optimal'
+    ? `x* = ${vecHTML(S.x)}，${P.sense === 'max' ? `max f = −z* = ${fr(S.f)}` : `min z = ${fr(S.z)}`}${(S.alt || []).filter(a => a.moved).map(a => `<br>${Vn(a.k)} 的 σ = 0，另一最优顶点 ${vecHTML(a.x)}`).join('')}`
+    : S.status === 'unbounded' ? `无界，${P.sense === 'max' ? 'f → +∞' : 'z → −∞'}` : '无可行解';
+  blocks.push(`<div class="pblk" style="cursor:default;background:var(--ink);color:#fff;border-color:var(--ink)"><div class="ph">结论</div><div class="pstd">${res}</div></div>`);
+  PL.procSnaps.push(null);
+  $('#proc').innerHTML = blocks.join('');
+}
+function setLayout(l) {
+  $('#proc').className = l; document.querySelectorAll('.lay').forEach(b => b.classList.toggle('on', b.dataset.lay === l));
+  try { localStorage.setItem('simplex-mv-layout', l); } catch (e) {}
+}
+document.querySelectorAll('.lay').forEach(b => (b.onclick = () => setLayout(b.dataset.lay)));
+let lay0 = 'v'; try { lay0 = localStorage.getItem('simplex-mv-layout') || 'v'; } catch (e) {}
+setLayout(lay0);
+$('#proc').addEventListener('click', e => { const k = e.target.closest('.pblk'); if (!k || !k.dataset.beat || +k.dataset.beat < 0) return; show(+k.dataset.beat); });
+function load(texts, withBookends) {
+  PL.list = texts.map(t => solve(parseProblem(t)));
+  const total = PL.list.length;
+  PL.beats = [];
+  if (withBookends) PL.beats.push({ kind: 'intro', dur: 9000, say: `共 ${total} 道题。判优标准为检验数全部 ≤ 0，此时取到全局极小。` });
+  PL.list.forEach((S, i) => PL.beats.push(...buildBeats(S, i, total)));
+  if (withBookends) PL.beats.push({ kind: 'finale', dur: 12000, say: `以上是全部 ${total} 题的结果。` });
+  let t = 0; PL.starts = PL.beats.map(b => { const s = t; t += b.dur; return s; }); PL.total = t;
+  buildProgress(); buildChaps(); PL.procPi = PL.origPi = null;
+}
+function show(i, animate = true) {
+  const prev = PL.beats[PL.i];
+  PL.i = Math.max(0, Math.min(PL.beats.length - 1, i));
+  const b = PL.beats[PL.i];
+  if (b.kind === 'intro') overlay(introHTML());
+  else if (b.kind === 'finale') overlay(finaleHTML());
+  else if (b.kind === 'chapter') overlay(chapterHTML(b));
+  else if (b.kind === 'phase') overlay(phaseHTML(b));
+  else overlay(null);
+  if (b.P) {
+    $('#h-group').textContent = b.P.group; $('#h-title').textContent = b.P.title;
+    $('#p-method').textContent = b.S.twoPhase ? '两阶段单纯形法' : '单纯形法'; $('#p-method').className = 'pill solid';
+    const ph = b.pk ? { I: '阶段一 · 辅助问题', II: '阶段二 · 原问题', S: '单纯形迭代' }[b.pk] : '建模';
+    $('#p-phase').textContent = ph; $('#p-phase').className = 'pill' + (b.pk ? ' ph-' + b.pk : '');
+  }
+  if (b.kind === 'chapter' || b.kind === 'model') { renderModel(b); setView('v-model'); }
+  if (b.kind === 'std') { renderStd(b); setView('v-std'); }
+  if (b.kind === 'tab') { renderTab(b, animate); setView('v-tab'); }
+  if (b.kind !== 'tab') $('#result').classList.remove('on');
+  if (b.kind === 'chapter') TABPREV.key = null;
+  if (b.say !== undefined || b.kind === 'chapter' || b.kind === 'phase') {
+    const t = $('#narr-t'), f = $('#narr-f');
+    const say = b.say || (b.kind === 'chapter' ? `第 ${b.pi + 1} 题，${b.P.title}。` : b.pk === 'I' ? '阶段一：求原问题的一个基可行解。' : '阶段二：回到原目标函数继续迭代。');
+    t.innerHTML = say; f.innerHTML = b.f || '';
+    [t, f].forEach(el => { el.classList.remove('say-in'); void el.offsetWidth; el.classList.add('say-in'); });
+  }
+  if (b.P) { setGeo(b); setZ(b); }
+  const pi = b.pi ?? (b.kind === 'intro' ? 0 : PL.procPi ?? 0);
+  if (b.P && PL.origPi !== b.pi) { PL.origPi = b.pi; const m = modelHTML(b.P); $('#orig').innerHTML = `<div class="t">原问题（全部变量 ≥ 0）</div><div>${m.obj}</div><div class="rows">${m.rows}</div>`; }
+  if (PL.procPi !== pi) { PL.procPi = pi; renderProcess(pi); }
+  PL.procSnaps.forEach((sn, k) => $('#proc').children[k].classList.toggle('cur', b.s === sn));
+  PL.pos = 0; schedule(); updateProgress();
+  document.querySelectorAll('.chap').forEach(c => c.classList.toggle('on', +c.dataset.pi === b.pi));
+}
+const beatPos = () => Math.min(PL.beats[PL.i].dur, PL.pos + (PL.playing ? (performance.now() - PL.t0) * PL.speed : 0));
+function schedule() {
+  clearTimeout(PL.timer); PL.t0 = performance.now();
+  if (!PL.playing) return;
+  PL.timer = setTimeout(() => { if (PL.i < PL.beats.length - 1) show(PL.i + 1); else setPlaying(false); }, (PL.beats[PL.i].dur - PL.pos) / PL.speed);
+}
+function setPlaying(on) {
+  if (on === PL.playing) return;
+  PL.pos = beatPos(); PL.playing = on; $('#bigPlay').hidden = true;
+  schedule();
+  $('#b-play').innerHTML = `<i data-lucide="${on ? 'pause' : 'play'}"></i>`; lucide.createIcons();
+}
+function step(d) { show(PL.i + d); }
+function jumpProblem(d) {
+  const pi = PL.beats[PL.i].pi ?? (d > 0 ? -1 : PL.list.length);
+  let target = pi + d;
+  if (d < 0 && PL.beats[PL.i].kind !== 'chapter') target = pi;
+  const idx = PL.beats.findIndex(b => b.kind === 'chapter' && b.pi === target);
+  if (idx >= 0) { show(idx); }
+  else if (d > 0 && PL.beats.at(-1).kind === 'finale') { show(PL.beats.length - 1); }
+}
+function buildProgress() {
+  const pr = $('#prog'); const groups = [];
+  PL.beats.forEach((b, i) => { const g = b.pi ?? (b.kind === 'intro' ? 'in' : 'fin'); if (!groups.length || groups.at(-1).g !== g) groups.push({ g, s: PL.starts[i], d: 0 }); groups.at(-1).d += b.dur; });
+  PL.groups = groups;
+  pr.innerHTML = groups.map((g, k) => `<div class="seg" data-k="${k}" style="flex:${g.d}"><i></i></div>`).join('');
+}
+function updateProgress() {
+  if (!PL.groups) return;
+  const t = PL.starts[PL.i] + beatPos(), segs = $('#prog').children;
+  PL.groups.forEach((g, k) => {
+    segs[k].querySelector('i').style.width = Math.max(0, Math.min(1, (t - g.s) / g.d)) * 100 + '%';
+    segs[k].classList.toggle('cur', t >= g.s && t < g.s + g.d);
+  });
+  const sec = x => `${Math.floor(x / 60000)}:${String(Math.floor(x / 1000) % 60).padStart(2, '0')}`;
+  const txt = `${sec(t)} / ${sec(PL.total)}  ·  第 ${PL.i + 1}/${PL.beats.length} 步`;
+  if ($('#clock').textContent !== txt) $('#clock').textContent = txt;
+}
+function buildChaps() {
+  $('#chaps').innerHTML = PL.list.map((S, i) => `<button class="chap" data-pi="${i}">${String(i + 1).padStart(2, '0')} ${S.P.title}</button>`).join('');
+}
+$('#chaps').addEventListener('click', e => { const c = e.target.closest('.chap'); if (!c) return; show(PL.beats.findIndex(b => b.kind === 'chapter' && b.pi === +c.dataset.pi)); });
+$('#prog').addEventListener('click', e => {
+  const r = $('#prog').getBoundingClientRect(), segs = [...$('#prog').children];
+  const seg = segs.find(s => { const q = s.getBoundingClientRect(); return e.clientX >= q.left - 2 && e.clientX <= q.right + 2; }); if (!seg) return;
+  const g = PL.groups[+seg.dataset.k], q = seg.getBoundingClientRect(), t = g.s + ((e.clientX - q.left) / q.width) * g.d;
+  let i = PL.starts.findIndex((s, k) => t >= s && t < s + PL.beats[k].dur); if (i < 0) i = PL.beats.length - 1;
+  show(i);
+});
+$('#b-play').onclick = () => setPlaying(!PL.playing);
+$('#bigPlay').onclick = () => setPlaying(true);
+$('#b-p').onclick = () => step(-1); $('#b-n').onclick = () => step(1);
+$('#b-pp').onclick = () => jumpProblem(-1); $('#b-nn').onclick = () => jumpProblem(1);
+$('#speed').onchange = e => { PL.pos = beatPos(); PL.speed = +e.target.value; schedule(); };
+$('#b-fs').onclick = () => { const f = $('#frame'); (document.fullscreenElement ? document.exitFullscreen() : f.requestFullscreen?.())?.catch?.(() => {}); };
+$('#b-all').onclick = () => { load(PROBLEMS, true); $('#gen-msg').textContent = ''; show(0); };
+$('#b-gen').onclick = () => {
+  const msg = $('#gen-msg');
+  try {
+    load([$('#custom-input').value], false); show(0); setPlaying(true);
+    msg.innerHTML = `<span style="color:var(--green)">已生成 ${PL.beats.length} 个镜头，正在播放。</span>`;
+    try { localStorage.setItem('simplex-mv-custom', $('#custom-input').value); } catch (e) {}
+    $('#frame').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) { msg.innerHTML = `<span style="color:var(--red)">${e.message}。请检查这一行的写法后再试。</span>`; }
+};
+document.addEventListener('keydown', e => {
+  if (e.target.closest('textarea,select,input')) return;
+  if (e.key === ' ') { e.preventDefault(); setPlaying(!PL.playing); }
+  else if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1);
+  else if (e.key === 'PageDown') jumpProblem(1); else if (e.key === 'PageUp') jumpProblem(-1);
+  else if (e.key === 'f' || e.key === 'F') $('#b-fs').click();
+});
+function fit() {
+  const f = $('#frame'), st = $('#stage'), fs = document.fullscreenElement === f;
+  const W = f.clientWidth, s = fs ? Math.min(W / 1600, f.clientHeight / 900) : W / 1600;
+  if (!fs) f.style.height = 900 * s + 'px'; else f.style.height = '';
+  st.style.transform = `scale(${s})`;
+  st.style.left = fs ? (W - 1600 * s) / 2 + 'px' : '0'; st.style.top = fs ? (f.clientHeight - 900 * s) / 2 + 'px' : '0';
+}
+new ResizeObserver(fit).observe($('#frame')); document.addEventListener('fullscreenchange', fit);
+
+let saved = null; try { saved = localStorage.getItem('simplex-mv-custom'); } catch (e) {}
+$('#custom-input').value = saved || `# 标题: 我的题目
+max 2x1 + 3x2
+x1 + x2 <= 4
+x1 + 3x2 <= 6
+x1 <= 3`;
+load(PROBLEMS, true);
+lucide.createIcons();
+show(0);
+</script>

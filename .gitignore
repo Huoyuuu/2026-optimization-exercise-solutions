@@ -22,3 +22,6 @@ docs/
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# HTML 打包时下载的第三方脚本缓存
+vendor/
