@@ -119,7 +119,7 @@
       basis.push(best);
     });
     let na = 0;
-    rows.forEach((r, i) => { if (basis[i] < 0) basis[i] = addCol('a', i, Q1, 'a' + ++na); });
+    rows.forEach((r, i) => { if (basis[i] < 0) basis[i] = addCol('a', i, Q1, 'u' + ++na); });
     const N = names.length;
     let T = rows.map(r => [...r.a, r.b]);
     const costII = names.map((_, j) => (j < n ? cMin[j] : Q0));
