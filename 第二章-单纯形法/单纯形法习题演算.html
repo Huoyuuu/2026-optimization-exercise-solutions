@@ -642,6 +642,8 @@ body{overflow-x:hidden}
 .ptab thead th{border-bottom:1.5px solid var(--ink);font-weight:400;font-size:15px}
 .ptab td:last-child,.ptab th:last-child{border-left:1px dashed #C9D0DB}
 .ptab tr.sg td{border-top:1.5px solid var(--ink);color:var(--muted)}
+.ptab tr.sg0 td{border-top:1.5px solid var(--ink);color:#9AA3B2;font-size:13px}
+.ptab tr.sg0+tr.sg td{border-top:1px dashed #C9D0DB}
 .ptab td.pos{color:var(--red);font-weight:700}
 .ptab td.pv{background:var(--red);color:#fff;border-radius:6px;font-weight:700}
 .ptab .fr{font-size:.8em}
@@ -841,7 +843,7 @@ function buildGeo(S) {
 }
 
 // ---------- 分镜生成：一道题 → 一串节拍 ----------
-const DUR = { chapter: 4400, model: 4400, std: 7600, phase: 4200, new: 3800, sigma: 4800, enter: 3200, ratio: 4400, pivot: 3800,
+const DUR = { elim: 4800, chapter: 4400, model: 4400, std: 7600, phase: 4200, new: 3800, sigma: 4800, enter: 3200, ratio: 4400, pivot: 3800,
   update: 4400, optimal: 4000, w0: 4400, infeasible: 5400, strike: 4000, swap: 4600, unbounded: 6000, drive: 5200, drop: 5200,
   result: 6800, alt: 6400 };
 function buildBeats(S, pi, total) {
@@ -880,44 +882,42 @@ function buildBeats(S, pi, total) {
     const first = ph.iters.length ? ph.iters[0].snap : ph.final;
     if (S.twoPhase) push({ kind: 'phase', pk, s: first });
     visit(first); zh.push(first.z);
+    const raw = rawSig(first), terms = elimTerms(first), eTxt = elimTxt(terms);
+    const noElim = `基变量 ${first.basis.map(V2).join('、')} 的目标系数都是 0，σ 行中基变量列已经是 0，不需要消元。`;
     if (phi === 0) {
-      tab('new', first, pk, { say: isI
-        ? `初始单纯形表。阶段一的目标是 w = ${art.map(V2).join(' + ')}，只计人工变量。w 降到 0 时人工变量全部为 0，即得到原问题的可行解。`
-        : `初始单纯形表。基变量 ${first.basis.map(V2).join('、')} 构成单位阵，基可行解即 b 列，c<sub>B</sub> 取它们的目标系数。` });
+      tab('new', first, pk, { sig: raw, say: (isI
+        ? `初始单纯形表。阶段一的目标是 w = ${art.map(V2).join(' + ')}，只计人工变量。σ 行先填入 −c<sub>j</sub>，z 填 0。`
+        : `初始单纯形表。基变量 ${first.basis.map(V2).join('、')} 构成单位阵，基可行解即 b 列。σ 行先填入 −c<sub>j</sub>，z 填 0。`) + (terms.length ? '' : noElim) });
     } else {
-      tab('swap', first, pk, { say: '阶段二：删去人工变量列，把 c<sub>j</sub> 行换回原目标系数，c<sub>B</sub> 随之更新，基保持不变。' });
+      tab('swap', first, pk, { sig: raw, say: `阶段二：删去人工变量列，c<sub>j</sub> 行换回原目标系数，σ 行重新填入 −c<sub>j</sub>，基保持不变。${terms.length ? '' : noElim}` });
     }
-    const sigmaBeat = (s, k) => {
-      const kk = k ?? s.cols.filter(j => !s.basis.includes(j)).reduce((a, j) => (a < 0 || s.sigma[j].cmp(s.sigma[a]) > 0 ? j : a), -1);
-      const f = kk >= 0 ? `${sig(names[kk])} = c<sub>B</sub>·P<sub>${sidx(names[kk])}</sub> − c<sub>${sidx(names[kk])}</sub> = ${s.T.map((r, i) => `${par(s.cB[i])}·${par(r[kk])}`).join(' + ')} − ${par(s.cost[kk])} = <b>${fr(s.sigma[kk])}</b>` : '';
-      tab('sigma', s, pk, { say: `逐列计算检验数 σ<sub>j</sub> = c<sub>B</sub>·P<sub>j</sub> − c<sub>j</sub>，基变量的检验数恒为 0。σ<sub>j</sub> > 0 表示让 ${V('xj')} 增大还能使 ${zl} 下降。`, f });
-    };
+    if (terms.length) tab('elim', first, pk, { sigOp: eTxt,
+      say: `基变量的检验数必须为 0。${terms.map(t => V2(first.basis[t.i])).join('、')} 列的 σ 现在不是 0，把它们所在的行乘以各自的 c<sub>B</sub> 加到 σ 行上，这些列就消成了 0。`,
+      f: `σ ← ${eTxt}，结果与 σ<sub>j</sub> = c<sub>B</sub>·P<sub>j</sub> − c<sub>j</sub> 相同` });
     ph.iters.forEach(it => {
       const k = it.enter, r = it.leave, s = it.snap;
-      sigmaBeat(s, k);
       tab('enter', s, pk, { k, say: `${sig(names[k])} = ${fr(s.sigma[k])} 是最大的正检验数，${V2(k)} 入基。${V2(k)} 每增加 1，${zl} 下降 ${fr(s.sigma[k])}。` });
       const rs = it.ratios.map((t, i) => (t ? `${fr(s.T[i][N])}÷${fr(s.T[i][k])}` : null)).filter(Boolean);
       tab('ratio', s, pk, { k, ratios: it.ratios, leave: r,
         say: `最小比值检验：只对 ${V2(k)} 列的正系数算 θ = b<sub>i</sub> ÷ a<sub>i${sidx(names[k])}</sub>。θ 最小的是第 ${r + 1} 行，该行基变量 ${V2(it.leaveVar)} 出基${it.ratios[r].isZero() ? '（θ = 0，退化迭代）' : ''}。`,
         f: `θ = min{ ${rs.join(',  ')} } = <b>${fr(it.ratios[r])}</b>` });
-      tab('pivot', s, pk, { k, leave: r, ops: it.ops, say: `主元 ${fr(it.pivotVal)}（第 ${r + 1} 行、${V2(k)} 列）。主元行除以主元，其余各行减去它的倍数，把 ${V2(k)} 列化成单位向量。`,
-        f: it.ops.map((op, i) => opTxt(op, i, r)).filter(Boolean).join('；  ') });
+      const so = sigOpTxt(s.sigma[k], r);
+      tab('pivot', s, pk, { k, leave: r, ops: it.ops, sigOp: so, say: `主元 ${fr(it.pivotVal)}（第 ${r + 1} 行、${V2(k)} 列）。主元行除以主元，其余各行和 σ 行都减去它的倍数，把 ${V2(k)} 列化成单位向量。`,
+        f: [...it.ops.map((op, i) => opTxt(op, i, r)).filter(Boolean), so].join('；  ') });
       visit(it.after); zh.push(it.after.z);
       const dz = s.z.sub(it.after.z);
-      tab('update', it.after, pk, { k, leave: r, ops: it.ops, prev: s,
+      tab('update', it.after, pk, { k, leave: r, ops: it.ops, sigOp: so, prev: s,
         say: it.ratios[r].isZero()
           ? `θ = 0，属于退化迭代。基变量换了，基可行解不变，${zl} 仍为 ${fr(s.z)}。`
-          : `${V2(k)} 入基，${V2(it.leaveVar)} 出基，得到新的基可行解。${zl} 从 ${fr(s.z)} 降到 ${fr(it.after.z)}，降幅等于 θ·σ。`,
+          : `${V2(k)} 入基，${V2(it.leaveVar)} 出基。σ 行跟着做了同样的行变换，${V2(k)} 列的检验数变为 0。${zl} 从 ${fr(s.z)} 降到 ${fr(it.after.z)}，降幅等于 θ·σ。`,
         f: `${zl}′ = ${zl} − θ·${sig(names[k])} = ${fr(s.z)} − ${par(it.ratios[r])}·${par(s.sigma[k])} = <b>${fr(it.after.z)}</b>${dz.isZero() ? '' : ''}` });
     });
     const fin = ph.final;
     if (ph.status === 'unbounded') {
-      sigmaBeat(fin, ph.enter);
       tab('enter', fin, pk, { k: ph.enter, say: `${sig(names[ph.enter])} = ${fr(fin.sigma[ph.enter])} > 0，${V2(ph.enter)} 应当入基。` });
       tab('unbounded', fin, pk, { k: ph.enter, say: `${V2(ph.enter)} 列的系数全部 ≤ 0，没有可以计算的 θ。${V2(ph.enter)} 无限增大时所有基变量仍非负，z → −∞，问题无界。` });
       return;
     }
-    sigmaBeat(fin);
     if (isI) {
       if (S.status === 'infeasible') { tab('infeasible', fin, pk, { say: `所有检验数 ≤ 0，阶段一已最优，但 w* = ${fr(fin.z)} > 0。人工变量不能全部为 0，原问题没有可行解。` }); return; }
       tab('w0', fin, pk, { say: `所有检验数 ≤ 0，阶段一结束，w* = 0。人工变量全部为 0，原问题可行。${S.events.length ? '还有人工变量以 0 值留在基中，需要先处理。' : ''}` });
@@ -926,7 +926,7 @@ function buildBeats(S, pi, total) {
         if (ev.type === 'drive') {
           tab('drive', ev.before, pk, { k: ev.enter, leave: ev.row, say: `${V2(ev.art)} 还在基中，但取值为 0。该行 ${V2(ev.enter)} 的系数不为 0，以它为主元做一次退化换基，把 ${V2(ev.art)} 换出，目标值不变。` });
           visit(ev.after);
-          tab('update', ev.after, pk, { k: ev.enter, leave: ev.row, ops: ev.ops, prev: ev.before, say: `${V2(ev.art)} 已离基。基可行解没有变化，只是换了一组基来表示它。` });
+          tab('update', ev.after, pk, { k: ev.enter, leave: ev.row, ops: ev.ops, sigOp: sigOpTxt(ev.before.sigma[ev.enter], ev.row), prev: ev.before, say: `${V2(ev.art)} 已离基。基可行解没有变化，只是换了一组基来表示它。` });
         } else {
           tab('drop', ev.before, pk, { leave: ev.row, say: `${V2(ev.art)} 所在行在所有原变量上的系数全为 0，这条约束可由其他约束线性表出，是冗余约束，删去这一行。` });
         }
@@ -952,6 +952,11 @@ function buildBeats(S, pi, total) {
   }
   return B;
 }
+const rawSig = s => ({ v: s.cost.map(c => c.neg()), z: Q0 });
+const elimTerms = s => s.cB.map((c, i) => ({ i, c })).filter(t => !t.c.isZero());
+const coefR = (c, i) => { const a = c.sgn() < 0 ? c.neg() : c; return `${c.sgn() < 0 ? '−' : '+'} ${a.eq(Q1) ? '' : fr(a) + '·'}R<sub>${i + 1}</sub>`; };
+const elimTxt = ts => 'σ ' + ts.map(t => coefR(t.c, t.i)).join(' ');
+const sigOpTxt = (f, r) => (f.isZero() ? 'σ 不变' : 'σ ' + coefR(f.neg(), r) + '′');
 function opTxt(op, i, r) {
   if (!op) return '';
   const R = k => `R<sub>${k + 1}</sub>`;
@@ -990,14 +995,14 @@ function renderStd(b) {
 function renderTab(b, animate) {
   const s = b.s, S = b.S, names = S.names, kinds = S.kinds, N = S.N, step = b.step;
   const cols = s.cols, m = s.T.length, nc = cols.length;
-  const showSig = !['new', 'update', 'swap'].includes(step);
-  const thMode = step === 'ratio' ? 'ratio' : ['pivot', 'update'].includes(step) ? 'ops' : step === 'unbounded' ? 'none' : '';
+  const showSig = true, sg = b.sig || { v: s.sigma, z: s.z };
+  const thMode = step === 'ratio' ? 'ratio' : ['pivot', 'update', 'elim'].includes(step) ? 'ops' : step === 'unbounded' ? 'none' : '';
   const prevKey = TABPREV.key, key = b.pi;
   const prev = prevKey === key ? TABPREV.vals : {};
   const vals = {}, cells = [];
   const C = (row, col, html, cls = '', id, extra = '') => {
     let c = cls;
-    if (id) { vals[id] = html; if (animate && id in prev && prev[id] !== html && (step === 'update' || step === 'swap')) c += ' chg'; }
+    if (id) { vals[id] = html; if (animate && id in prev && prev[id] !== html && ['update', 'swap', 'elim'].includes(step)) c += ' chg'; }
     cells.push(`<div class="c ${c}" style="grid-row:${row};grid-column:${col};${extra}">${html}</div>`);
   };
   const rowOf = i => 3 + i, sgRow = 3 + m, colOf = t => 3 + t, bCol = 3 + nc, thCol = 4 + nc;
@@ -1009,6 +1014,7 @@ function renderTab(b, animate) {
   C(2, bCol, 'b', 'hv bcol'); C(2, thCol, thMode === 'ops' ? '<span class="lab">行变换</span>' : thMode ? 'θ' : '', 'hv', null, 'justify-content:flex-start;padding-left:16px;font-family:var(--f-math)');
   // 行
   const flipDelay = i => (step === 'update' ? (i === b.leave ? 0.1 : 0.55 + 0.16 * i) : 0.05 * i);
+  const sgDelay = t => (step === 'update' ? 0.55 + 0.16 * m + t * 0.04 : step === 'elim' ? 0.4 + t * 0.07 : 0.15 + t * 0.12);
   s.T.forEach((r, i) => {
     const rr = rowOf(i), d = `--d:${flipDelay(i).toFixed(2)}s`;
     C(rr, 1, fr(s.cB[i]), 'row', 'cb' + i, d);
@@ -1021,28 +1027,30 @@ function renderTab(b, animate) {
     let th = '';
     if (thMode === 'ratio') th = b.ratios[i] ? `<span>${fr(r[N])} ÷ ${fr(r[b.k])} = ${fr(b.ratios[i])}</span>` : '<span>—</span>';
     if (thMode === 'none') th = '<span>—</span>';
-    if (thMode === 'ops') th = opTxt(b.ops[i], i, b.leave) || '<span class="muted">不变</span>';
+    if (thMode === 'ops') th = step === 'elim' ? '' : opTxt(b.ops[i], i, b.leave) || '<span class="muted">不变</span>';
     C(rr, thCol, th, (thMode === 'ops' ? 'row opc rv' : 'row thc rv') + (thMode === 'ratio' && i === b.leave ? ' min' : ''), null, `--d:${(0.25 + i * 0.35).toFixed(2)}s`);
   });
   // 检验数行
   C(sgRow, 2, 'σ<sub>j</sub>', 'sg lab');
   const allGood = ['optimal', 'w0', 'result', 'alt', 'strike', 'infeasible'].includes(step);
   cols.forEach((j, t) => {
-    const v = s.sigma[j];
+    const v = sg.v[j];
     let cls = 'sg';
     if (!showSig) cls += ' hidden-sg';
     else if (step === 'sigma') cls += ' rv';
     if (showSig && v.sgn() > 0) cls += ' pos';
     if (showSig && allGood && v.sgn() <= 0) cls += ' good';
     if (step === 'strike' && kinds[j] === 'a') cls += ' strk';
-    C(sgRow, colOf(t), fr(v), cls, showSig ? 's' + j : null, `--d:${(0.15 + t * 0.12).toFixed(2)}s`);
+    C(sgRow, colOf(t), fr(v), cls, 's' + j, `--d:${sgDelay(t).toFixed(2)}s`);
   });
-  C(sgRow, bCol, showSig ? `${b.pk === 'I' ? 'w' : 'z'}=${fr(s.z)}` : '', 'sg bcol zc' + (step === 'sigma' ? ' rv' : ''), null, `--d:${(0.2 + nc * 0.12).toFixed(2)}s;font-size:19px`);
+  C(sgRow, bCol, `${b.pk === 'I' ? 'w' : 'z'}=${fr(sg.z)}`, 'sg bcol zc', 'z', `--d:${sgDelay(nc).toFixed(2)}s;font-size:19px`);
+  if (thMode === 'ops' && b.sigOp) C(sgRow, thCol, b.sigOp, 'sg opc rv', null, `--d:${(0.25 + m * 0.35).toFixed(2)}s`);
   // 色带与特效
   const bands = [];
   const kt = cols.indexOf(b.k);
   if (kt >= 0 && ['enter', 'ratio', 'pivot', 'update', 'unbounded', 'drive', 'alt', 'result'].includes(step) && !(step === 'result' && S.status !== 'unbounded'))
     bands.push(`<div class="band-col${step === 'update' ? ' fade' : ''}" style="grid-row:1/${sgRow + 1};grid-column:${colOf(kt)}"></div>`);
+  if (step === 'elim') bands.push(`<div class="band-row" style="grid-row:${sgRow};grid-column:1/${thCol + 1}"></div>`);
   if (b.leave != null && ['ratio', 'pivot', 'update', 'drive', 'drop'].includes(step))
     bands.push(`<div class="band-row${step === 'drop' ? ' drop' : ''}${step === 'update' ? ' fade' : ''}" style="grid-row:${rowOf(b.leave)};grid-column:1/${thCol + 1}"></div>`);
   if (step === 'sigma') bands.push(`<div class="scan" style="grid-row:${sgRow};grid-column:${colOf(0)}/${colOf(nc)}"></div>`);
@@ -1279,7 +1287,7 @@ function phaseHTML(b) {
     <div class="phs-d rise" style="--d:.3s">换回原目标函数，从阶段一得到的可行基出发继续迭代。</div></div>`;
 }
 function introHTML() {
-  const rules = [['标准化', '化为 min，约束变等式、右端非负；补松弛、剩余、人工变量'], ['检验数', 'σ<sub>j</sub> = c<sub>B</sub>B<sup>−1</sup>P<sub>j</sub> − c<sub>j</sub>，基变量恒为 0'],
+  const rules = [['标准化', '化为 min，约束变等式、右端非负；补松弛、剩余、人工变量'], ['检验数', 'σ 行初值填 −c<sub>j</sub>，再用行变换把基变量列消成 0；之后随每次换基一起做行变换'],
     ['入基', '取最大的正 σ<sub>j</sub> 对应的变量'], ['出基', '按最小比值 θ 确定，保证新解仍然可行'], ['判优', '全部 σ<sub>j</sub> ≤ 0 时，当前解为全局极小']];
   return `<div class="phs" style="padding:0 110px"><div class="ch-group rise">运筹学 · 线性规划 · ${PL.list.length} 道习题</div>
     <div class="big-title rise" style="--d:.1s">单纯形法<em>习题演算</em></div>
@@ -1352,7 +1360,7 @@ function sfx(b) {
     case 'enter': tone(N(60), t, 0.45, { type: 'sawtooth', vol: 0.035, glide: N(79) }); tone(N(79), t + 0.3, 1, { vol: 0.12 }); break;
     case 'ratio': for (let i = 0; i < m; i++) tone(N(72 + i * 3), t + 0.25 + i * 0.35, 0.35, { type: 'triangle', vol: 0.07 }); tone(N(88), t + 0.35 + m * 0.35, 0.9, { vol: 0.09 }); break;
     case 'pivot': case 'drive': tone(N(40), t, 0.7, { vol: 0.45, glide: N(28), rev: 0.05 }); noise(t, 0.18, { f0: 2500, f1: 200, vol: 0.18 }); tone(N(84), t + 0.04, 1.8, { vol: 0.08 }); tone(N(91), t + 0.04, 1.8, { vol: 0.05 }); break;
-    case 'update': [67, 71, 74, 79, 83].forEach((n, i) => tone(N(n), t + 0.12 + i * 0.12, 0.6, { type: 'triangle', vol: 0.06 })); break;
+    case 'update': case 'elim': [67, 71, 74, 79, 83].forEach((n, i) => tone(N(n), t + 0.12 + i * 0.12, 0.6, { type: 'triangle', vol: 0.06 })); break;
     case 'swap': [64, 67, 72, 76].forEach((n, i) => tone(N(n), t + 0.1 + i * 0.1, 0.8, { type: 'triangle', vol: 0.06 })); break;
     case 'optimal': case 'w0': chord([60, 64, 67, 72, 76], t + 0.2, 2.6, 0.05); tone(N(88), t + 0.5, 2, { vol: 0.05 }); break;
     case 'result': noise(t, 1, { f0: 200, f1: 2500, vol: 0.07 }); chord(b.S.status === 'optimal' ? [48, 55, 60, 64, 67, 72, 79] : [45, 52, 57, 60, 64], t + 0.6, 3.6, 0.05);
@@ -1423,11 +1431,11 @@ function renderProcess(pi) {
   $('#proc-title').textContent = S.P.title;
   const Vn = j => V(names[j], kinds[j]);
   const beatOf = s => { const i = PL.beats.findIndex(b => b.kind === 'tab' && b.s === s && ['sigma', 'drive', 'drop'].includes(b.step)); return i >= 0 ? i : PL.beats.findIndex(b => b.s === s); };
-  const add = (s, title, note, pk, pv) => {
+  const add = (s, title, note, pk, pv, raw) => {
     PL.procSnaps.push(s);
     blocks.push(`<div class="pblk" data-beat="${beatOf(s)}"><div class="ph">${title}</div><div style="overflow-x:auto"><table class="ptab"><thead><tr><th>基</th><th>c<sub>B</sub></th>${s.cols.map(j => `<th>${Vn(j)}</th>`).join('')}<th>b</th></tr></thead><tbody>${
       s.T.map((r, i) => `<tr><td>${Vn(s.basis[i])}</td><td>${fr(s.cB[i])}</td>${s.cols.map(j => `<td class="${pv && pv[0] === i && pv[1] === j ? 'pv' : ''}">${fr(r[j])}</td>`).join('')}<td>${fr(r[N])}</td></tr>`).join('')
-    }<tr class="sg"><td>σ</td><td></td>${s.cols.map(j => `<td class="${s.sigma[j].sgn() > 0 ? 'pos' : ''}">${fr(s.sigma[j])}</td>`).join('')}<td>${pk === 'I' ? 'w' : 'z'} = ${fr(s.z)}</td></tr></tbody></table></div>${note ? `<div class="pn">${note}</div>` : ''}</div>`);
+    }${raw ? `<tr class="sg0"><td>−c<sub>j</sub></td><td></td>${s.cols.map(j => `<td>${fr(s.cost[j].neg())}</td>`).join('')}<td>0</td></tr>` : ''}<tr class="sg"><td>σ</td><td></td>${s.cols.map(j => `<td class="${s.sigma[j].sgn() > 0 ? 'pos' : ''}">${fr(s.sigma[j])}</td>`).join('')}<td>${pk === 'I' ? 'w' : 'z'} = ${fr(s.z)}</td></tr></tbody></table></div>${note ? `<div class="pn">${note}</div>` : ''}</div>`);
   };
   // 标准型
   const P = S.P;
@@ -1436,17 +1444,19 @@ function renderProcess(pi) {
   S.phases.forEach(ph => {
     let no = 0;
     const pre = S.twoPhase ? ph.title + ' ' : '';
+    const first = ph.iters.length ? ph.iters[0].snap : ph.final, ts = elimTerms(first);
+    const pre0 = ts.length ? `σ 行初值为 −c<sub>j</sub>，经 ${elimTxt(ts)} 消元得到 σ 行。` : 'σ 行即 −c<sub>j</sub>（基变量目标系数均为 0）。';
     ph.iters.forEach(it => {
       const s = it.snap, k = it.enter, r = it.leave;
       const th = it.ratios.map((t, i) => (t ? `${fr(s.T[i][N])}÷${fr(s.T[i][k])}` : null)).filter(Boolean).join(', ');
-      add(s, `${pre}第 ${no++} 张表`, `${Vn(k)} 入基（${sig(names[k])} = ${fr(s.sigma[k])}），θ = min{${th}} = ${fr(it.ratios[r])}，${Vn(it.leaveVar)} 出基，主元 ${fr(it.pivotVal)}。`, ph.key, [r, k]);
+      add(s, `${pre}第 ${no++} 张表`, `${s === first ? pre0 + '<br>' : ''}${Vn(k)} 入基（${sig(names[k])} = ${fr(s.sigma[k])}），θ = min{${th}} = ${fr(it.ratios[r])}，${Vn(it.leaveVar)} 出基，主元 ${fr(it.pivotVal)}；σ 行做 ${sigOpTxt(s.sigma[k], r)}。`, ph.key, [r, k], s === first && ts.length > 0);
     });
     const f = ph.final;
     let note;
     if (ph.status === 'unbounded') note = `${Vn(ph.enter)} 的 σ = ${fr(f.sigma[ph.enter])} > 0，但该列系数全部 ≤ 0，问题无界。`;
     else if (ph.key === 'I') note = S.status === 'infeasible' ? `全部 σ ≤ 0，w* = ${fr(f.z)} > 0，原问题无可行解。` : `全部 σ ≤ 0，w* = 0，阶段一结束。`;
     else note = `全部 σ ≤ 0，最优。`;
-    add(f, `${pre}第 ${no} 张表`, note, ph.key);
+    add(f, `${pre}第 ${no} 张表`, (f === first ? pre0 + '<br>' : '') + note, ph.key, null, f === first && ts.length > 0);
     if (ph.key === 'I') S.events.forEach(ev => {
       if (ev.type === 'drive') add(ev.before, '人工变量换出', `${Vn(ev.art)} 以 0 值留在基中，以第 ${ev.row + 1} 行 ${Vn(ev.enter)} 列为主元换出。`, 'I', [ev.row, ev.enter]);
       else add(ev.before, '删去冗余行', `${Vn(ev.art)} 所在的第 ${ev.row + 1} 行在原变量上系数全为 0，删去该行。`, 'I');
