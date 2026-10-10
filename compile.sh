@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # LaTeX 自动化编译脚本
-# 默认使用 xelatex (支持 ctex 中文排版)，编译输出 PDF 到 ./PDF 目录
+# 默认使用 xelatex (支持 ctex 中文排版)。编译各章目录（第X章-*/）下的 .tex / .latex，
+# PDF 输出到源文件所在的章节目录。用法：./compile.sh [章节目录 ...]，不带参数时编译全部章节
 # ==============================================================================
 
 set -e
@@ -10,22 +11,20 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-LATEX_DIR="LaTeX"
-PDF_DIR="PDF"
 BUILD_DIR=".build"
-
-# 确保输出目录存在
-mkdir -p "$PDF_DIR"
 mkdir -p "$BUILD_DIR"
 
 echo "=== 开始编译 LaTeX 文档 ==="
 
-# 查找 LaTeX 目录下的所有 .tex 或 .latex 文件
+# 查找各章目录下的 .tex 或 .latex 文件（不进入子目录，第二章的 源码/题目.tex 不参与编译）
 shopt -s nullglob
-FILES=("$LATEX_DIR"/*.tex "$LATEX_DIR"/*.latex)
+DIRS=("$@")
+[ ${#DIRS[@]} -eq 0 ] && DIRS=(第*章*/)
+FILES=()
+for d in "${DIRS[@]}"; do FILES+=("${d%/}"/*.tex "${d%/}"/*.latex); done
 
 if [ ${#FILES[@]} -eq 0 ]; then
-    echo "未在 $LATEX_DIR 目录下找到 .tex 或 .latex 文件！"
+    echo "未在章节目录下找到 .tex 或 .latex 文件！"
     exit 1
 fi
 
@@ -48,10 +47,11 @@ for file in "${FILES[@]}"; do
         xelatex -interaction=nonstopmode -output-directory="$BUILD_DIR" "$file"
     fi
 
-    # 移动生成的 PDF 到 PDF 目录
+    # 把生成的 PDF 复制回源文件所在的章节目录
+    out_dir="$(dirname "$file")"
     if [ -f "$BUILD_DIR/$basename_no_ext.pdf" ]; then
-        cp -f "$BUILD_DIR/$basename_no_ext.pdf" "$PDF_DIR/$basename_no_ext.pdf"
-        echo "✓ 成功生成: $PDF_DIR/$basename_no_ext.pdf"
+        cp -f "$BUILD_DIR/$basename_no_ext.pdf" "$out_dir/$basename_no_ext.pdf"
+        echo "✓ 成功生成: $out_dir/$basename_no_ext.pdf"
     else
         echo "✗ 未找到生成的 PDF: $BUILD_DIR/$basename_no_ext.pdf"
         exit 1
@@ -59,4 +59,4 @@ for file in "${FILES[@]}"; do
 done
 
 echo "========================================"
-echo "所有文档编译完成！输出文件位于 $PDF_DIR 目录。"
+echo "所有文档编译完成！PDF 已输出到各章节目录。"

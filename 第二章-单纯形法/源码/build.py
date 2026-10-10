@@ -1,7 +1,7 @@
 """把 index.html + engine.js + problems.js + Tailwind/Lucide 打包成一个可离线双击打开的 HTML。
-用法：python build.py   输出 dist/单纯形法习题演算.html
+用法：python build.py [输出路径]   默认输出 dist/单纯形法习题演算.html
 """
-import pathlib, re, urllib.request
+import pathlib, re, sys, urllib.request
 
 ROOT = pathlib.Path(__file__).parent
 CACHE = ROOT / "vendor"
@@ -33,7 +33,7 @@ for name in ("engine.js", "problems.js"):
 assert not re.search(r'<script src=', html), "还有未内联的脚本"
 head = '<!doctype html>\n<html lang="zh-CN">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'
 html = head + html.replace("<style>", "<style>\n[hidden]{display:none!important}\nbody{margin:0}", 1) + "\n</html>\n"
-out = ROOT / "dist" / "单纯形法习题演算.html"
-out.parent.mkdir(exist_ok=True)
+out = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "dist" / "单纯形法习题演算.html"
+out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(html, encoding="utf-8")
 print(out, f"{out.stat().st_size / 1024:.0f} KB")
