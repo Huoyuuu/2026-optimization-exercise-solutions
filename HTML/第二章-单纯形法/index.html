@@ -280,6 +280,11 @@ body{overflow-x:hidden}
       <div class="flex items-center gap-1 ml-2 text-sm text-slate-500"><i data-lucide="gauge" class="w-4 h-4"></i>
         <select id="speed" class="ctl text-sm"><option value="0.6">0.6×</option><option value="0.8">0.8×</option><option value="1" selected>1×</option><option value="1.3">1.3×</option><option value="1.7">1.7×</option><option value="2.5">2.5×</option></select></div>
       <span id="clock" class="text-sm text-slate-500 font-mono ml-2"></span>
+      <div class="flex items-center gap-1 ml-2" role="group" aria-label="声音">
+        <button class="ctl gap-1 text-sm" id="a-voice" title="旁白朗读"><i data-lucide="mic"></i>旁白</button>
+        <button class="ctl gap-1 text-sm" id="a-sfx" title="音效"><i data-lucide="volume-2"></i>音效</button>
+        <button class="ctl gap-1 text-sm" id="a-music" title="背景音乐"><i data-lucide="music"></i>配乐</button>
+      </div>
       <div class="flex-1"></div>
       <button class="ctl gap-2 text-sm" id="b-all"><i data-lucide="list-video"></i>全部习题</button>
       <button class="ctl gap-2 text-sm" id="b-fs"><i data-lucide="maximize"></i>全屏</button>
@@ -874,6 +879,123 @@ function finaleHTML() {
     }).join('')}</div></div>`;
 }
 
+// ---------- 声音：Web Audio 合成音效与配乐 + 浏览器朗读旁白 ----------
+const AU = { ctx: null, sfx: true, music: true, voice: true, utter: null, speaking: false, spoken: -1, bar: 0, nextBar: 0 };
+try { const o = JSON.parse(localStorage.getItem('simplex-mv-audio') || '{}'); ['sfx', 'music', 'voice'].forEach(k => k in o && (AU[k] = o[k])); } catch (e) {}
+const N = m => 440 * 2 ** ((m - 69) / 12);
+function audioInit() {
+  if (AU.ctx) { AU.ctx.resume?.(); return; }
+  const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+  const c = AU.ctx = new C();
+  AU.master = c.createGain(); AU.master.gain.value = 0.85; AU.master.connect(c.destination);
+  const len = c.sampleRate * 2.4, buf = c.createBuffer(2, len, c.sampleRate);
+  for (let ch = 0; ch < 2; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 3; }
+  AU.rev = c.createConvolver(); AU.rev.buffer = buf;
+  const rg = c.createGain(); rg.gain.value = 0.4; AU.rev.connect(rg).connect(AU.master);
+  AU.mus = c.createGain(); AU.mus.gain.value = 0; AU.mus.connect(AU.master); AU.mus.connect(AU.rev);
+  AU.nextBar = c.currentTime + 0.1;
+}
+function tone(f, t0, dur, { type = 'sine', vol = 0.2, attack = 0.006, rev = 0.3, glide, out } = {}) {
+  const c = AU.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t0); if (glide) o.frequency.exponentialRampToValueAtTime(glide, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(vol, t0 + attack); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(out || AU.master);
+  if (rev && !out) { const sg = c.createGain(); sg.gain.value = rev; g.connect(sg).connect(AU.rev); }
+  o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function pad(f, t0, dur, vol) {
+  const c = AU.ctx, g = c.createGain();
+  g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(vol, t0 + 1.4); g.gain.setValueAtTime(vol, t0 + dur - 1.2); g.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+  g.connect(AU.mus);
+  [-4, 4].forEach(dt => { const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = f; o.detune.value = dt; o.connect(g); o.start(t0); o.stop(t0 + dur + 0.05); });
+}
+function noise(t0, dur, { vol = 0.12, f0 = 400, f1 = 4000 } = {}) {
+  const c = AU.ctx, n = Math.ceil(c.sampleRate * dur), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+  const src = c.createBufferSource(), bp = c.createBiquadFilter(), g = c.createGain();
+  src.buffer = buf; bp.type = 'bandpass'; bp.Q.value = 1.2; bp.frequency.setValueAtTime(f0, t0); bp.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.linearRampToValueAtTime(vol, t0 + dur * 0.45); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  src.connect(bp).connect(g); g.connect(AU.master); const sg = c.createGain(); sg.gain.value = 0.3; g.connect(sg).connect(AU.rev);
+  src.start(t0);
+}
+const chord = (ms, t, dur, vol, type = 'triangle') => ms.forEach((m, i) => tone(N(m), t + i * 0.035, dur, { type, vol, attack: 0.02 }));
+function sfx(b) {
+  if (!AU.ctx || !AU.sfx) return;
+  const t = AU.ctx.currentTime + 0.03, k = b.step || b.kind;
+  const m = b.s ? b.s.T.length : 3, cols = b.s ? b.s.cols : [];
+  switch (k) {
+    case 'intro': noise(t, 1.6, { f0: 200, f1: 3000, vol: 0.08 }); chord([48, 55, 60, 64, 71], t + 0.6, 4, 0.06); break;
+    case 'chapter': noise(t, 0.85, { f0: 300, f1: 6000, vol: 0.13 }); tone(N(36), t + 0.45, 1.8, { vol: 0.3, glide: N(31), rev: 0.1 }); chord([60, 67, 72], t + 0.5, 2.2, 0.06); break;
+    case 'phase': noise(t, 0.75, { f0: 5000, f1: 300, vol: 0.1 }); chord(b.pk === 'I' ? [57, 64, 69, 72] : [60, 67, 72, 76], t + 0.4, 2.2, 0.06); break;
+    case 'model': [72, 76, 79].forEach((n, i) => tone(N(n), t + 0.15 + i * 0.12, 0.7, { type: 'triangle', vol: 0.06 })); break;
+    case 'std': for (let i = 0; i < m * 2; i++) tone(N(76 + (i % 4) * 3), t + 0.9 + i * 0.3, 0.25, { type: 'triangle', vol: 0.06 }); break;
+    case 'new': [60, 64, 67, 72].forEach((n, i) => tone(N(n), t + i * 0.08, 0.6, { type: 'triangle', vol: 0.06 })); break;
+    case 'sigma': cols.forEach((j, i) => tone(N(b.s.sigma[j].sgn() > 0 ? 93 : 84), t + 0.15 + i * 0.12, 0.09, { type: 'square', vol: 0.02, rev: 0.15 })); break;
+    case 'enter': tone(N(60), t, 0.45, { type: 'sawtooth', vol: 0.035, glide: N(79) }); tone(N(79), t + 0.3, 1, { vol: 0.12 }); break;
+    case 'ratio': for (let i = 0; i < m; i++) tone(N(72 + i * 3), t + 0.25 + i * 0.35, 0.35, { type: 'triangle', vol: 0.07 }); tone(N(88), t + 0.35 + m * 0.35, 0.9, { vol: 0.09 }); break;
+    case 'pivot': case 'drive': tone(N(40), t, 0.7, { vol: 0.45, glide: N(28), rev: 0.05 }); noise(t, 0.18, { f0: 2500, f1: 200, vol: 0.18 }); tone(N(84), t + 0.04, 1.8, { vol: 0.08 }); tone(N(91), t + 0.04, 1.8, { vol: 0.05 }); break;
+    case 'update': [67, 71, 74, 79, 83].forEach((n, i) => tone(N(n), t + 0.12 + i * 0.12, 0.6, { type: 'triangle', vol: 0.06 })); break;
+    case 'swap': [64, 67, 72, 76].forEach((n, i) => tone(N(n), t + 0.1 + i * 0.1, 0.8, { type: 'triangle', vol: 0.06 })); break;
+    case 'optimal': case 'w0': chord([60, 64, 67, 72, 76], t + 0.2, 2.6, 0.05); tone(N(88), t + 0.5, 2, { vol: 0.05 }); break;
+    case 'result': noise(t, 1, { f0: 200, f1: 2500, vol: 0.07 }); chord(b.S.status === 'optimal' ? [48, 55, 60, 64, 67, 72, 79] : [45, 52, 57, 60, 64], t + 0.6, 3.6, 0.05);
+      if (b.S.status === 'optimal') [84, 88, 91, 96].forEach((n, i) => tone(N(n), t + 1 + i * 0.1, 0.9, { vol: 0.035 })); break;
+    case 'alt': [72, 79, 84, 91].forEach((n, i) => tone(N(n), t + 0.2 + i * 0.18, 1.2, { vol: 0.06 })); break;
+    case 'unbounded': tone(N(84), t + 0.2, 2.2, { type: 'sawtooth', vol: 0.03, glide: N(40) }); tone(N(36), t + 1.4, 1.8, { vol: 0.25 }); break;
+    case 'infeasible': chord([57, 60, 63, 66], t + 0.2, 2.2, 0.06); break;
+    case 'strike': cols.forEach((j, i) => b.S.kinds[j] === 'a' && noise(t + 0.1 * i, 0.4, { f0: 900, f1: 3500, vol: 0.09 })); break;
+    case 'drop': tone(N(52), t, 0.9, { type: 'triangle', vol: 0.12, glide: N(40) }); break;
+    case 'finale': chord([48, 55, 60, 64, 67], t + 0.3, 3, 0.05); chord([53, 60, 65, 69, 72], t + 2.6, 3, 0.05); chord([48, 55, 60, 64, 67, 72, 79], t + 5, 5, 0.05); break;
+  }
+}
+const CHORDS = [[48, 55, 64, 71, 74], [45, 52, 60, 67, 71], [41, 48, 57, 64, 69], [43, 50, 59, 62, 69]];
+setInterval(() => {
+  if (!AU.ctx) return;
+  const c = AU.ctx, on = AU.music && PL.playing;
+  AU.mus.gain.setTargetAtTime(on ? 0.16 : 0, c.currentTime, 0.6);
+  if (!on) { AU.nextBar = Math.max(AU.nextBar, c.currentTime + 0.1); return; }
+  while (AU.nextBar < c.currentTime + 1.2) {
+    const t = AU.nextBar, ch = CHORDS[AU.bar % 4];
+    ch.forEach((m, i) => pad(N(m), t, 4.8, i ? 0.035 : 0.06));
+    for (let s = 0; s < 8; s++) if (Math.random() < 0.6) tone(N(ch[1 + ((s * 3 + AU.bar) % 4)] + 12), t + s * 0.5, 1.4, { type: 'sine', vol: 0.05, out: AU.mus });
+    AU.bar++; AU.nextBar += 4;
+  }
+}, 300);
+
+// 旁白朗读
+let zhVoice = null;
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const vs = speechSynthesis.getVoices().filter(v => /^zh/i.test(v.lang));
+  zhVoice = vs.find(v => /Xiaoxiao/i.test(v.name)) || vs.find(v => /Natural|Online/i.test(v.name) && /CN/i.test(v.lang)) || vs.find(v => /CN/i.test(v.lang)) || vs[0] || null;
+}
+if ('speechSynthesis' in window) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function toSpeech(html) {
+  let s = html.replace(/<span class="fr"><span>(\d+)<\/span><span>(\d+)<\/span><\/span>/g, '$2分之$1').replace(/<[^>]+>/g, '');
+  [[/&gt;/g, '大于'], [/&lt;/g, '小于'], [/σ/g, '西格玛'], [/θ/g, '西塔'], [/≤/g, '小于等于'], [/≥/g, '大于等于'], [/−∞/g, '负无穷'], [/\+∞/g, '正无穷'], [/∞/g, '无穷'], [/→/g, '趋于'],
+   [/ − /g, ' 减 '], [/−/g, '负'], [/min/g, '最小值'], [/max/g, '最大值'], [/·/g, '乘'], [/÷/g, '除以'], [/×/g, '乘'], [/\*/g, '星'], [/=/g, '等于'], [/>/g, '大于'], [/</g, '小于'], [/\+/g, '加'], [/[()]/g, '，']].forEach(([a, b]) => (s = s.replace(a, b)));
+  return s;
+}
+function stopSpeech() { AU.utter = null; AU.speaking = false; if ('speechSynthesis' in window) speechSynthesis.cancel(); }
+function speak() {
+  stopSpeech();
+  if (!AU.voice || !PL.playing || !('speechSynthesis' in window) || !PL.say) return;
+  const u = new SpeechSynthesisUtterance(toSpeech(PL.say));
+  u.lang = 'zh-CN'; if (zhVoice) u.voice = zhVoice; u.rate = Math.min(2, 1.12 * PL.speed);
+  u.onend = u.onerror = () => { if (AU.utter !== u) return; AU.speaking = false; if (PL.waitSpeech) advance(); };
+  AU.utter = u; AU.speaking = true; AU.spoken = PL.i; speechSynthesis.speak(u);
+}
+function setAudio(k) {
+  AU[k] = !AU[k];
+  try { localStorage.setItem('simplex-mv-audio', JSON.stringify({ sfx: AU.sfx, music: AU.music, voice: AU.voice })); } catch (e) {}
+  if (k === 'voice' && !AU.voice) { stopSpeech(); if (PL.waitSpeech) advance(); }
+  if (k === 'voice' && AU.voice && PL.playing) speak();
+  if (AU[k]) audioInit();
+  paintAudio();
+}
+function paintAudio() { ['sfx', 'music', 'voice'].forEach(k => { const b = $('#a-' + k); b.classList.toggle('on', AU[k]); b.setAttribute('aria-pressed', AU[k]); }); }
+['sfx', 'music', 'voice'].forEach(k => ($('#a-' + k).onclick = () => setAudio(k)));
+paintAudio();
+
 // ---------- 播放器 ----------
 const PL = { list: [], beats: [], i: 0, playing: false, speed: 1, timer: null, t0: 0, pos: 0, starts: [] };
 // ---------- 求解过程（全部单纯形表） ----------
@@ -960,7 +1082,7 @@ function show(i, animate = true) {
   if (b.say !== undefined || b.kind === 'chapter' || b.kind === 'phase') {
     const t = $('#narr-t'), f = $('#narr-f');
     const say = b.say || (b.kind === 'chapter' ? `第 ${b.pi + 1} 题，${b.P.title}。` : b.pk === 'I' ? '阶段一：求原问题的一个基可行解。' : '阶段二：回到原目标函数继续迭代。');
-    t.innerHTML = say; f.innerHTML = b.f || '';
+    t.innerHTML = say; f.innerHTML = b.f || ''; PL.say = say;
     [t, f].forEach(el => { el.classList.remove('say-in'); void el.offsetWidth; el.classList.add('say-in'); });
   }
   if (b.P) { setGeo(b); setZ(b); }
@@ -968,18 +1090,23 @@ function show(i, animate = true) {
   if (b.P && PL.origPi !== b.pi) { PL.origPi = b.pi; const m = modelHTML(b.P); $('#orig').innerHTML = `<div class="t">原问题（全部变量 ≥ 0）</div><div>${m.obj}</div><div class="rows">${m.rows}</div>`; }
   if (PL.procPi !== pi) { PL.procPi = pi; renderProcess(pi); }
   PL.procSnaps.forEach((sn, k) => $('#proc').children[k].classList.toggle('cur', b.s === sn));
-  PL.pos = 0; schedule(); updateProgress();
+  PL.pos = 0; PL.waitSpeech = false; schedule(); updateProgress();
+  if (animate) sfx(b);
+  speak();
   document.querySelectorAll('.chap').forEach(c => c.classList.toggle('on', +c.dataset.pi === b.pi));
 }
 const beatPos = () => Math.min(PL.beats[PL.i].dur, PL.pos + (PL.playing ? (performance.now() - PL.t0) * PL.speed : 0));
 function schedule() {
   clearTimeout(PL.timer); PL.t0 = performance.now();
   if (!PL.playing) return;
-  PL.timer = setTimeout(() => { if (PL.i < PL.beats.length - 1) show(PL.i + 1); else setPlaying(false); }, (PL.beats[PL.i].dur - PL.pos) / PL.speed);
+  PL.timer = setTimeout(() => { if (AU.voice && AU.speaking) PL.waitSpeech = true; else advance(); }, (PL.beats[PL.i].dur - PL.pos) / PL.speed);
 }
+function advance() { PL.waitSpeech = false; if (PL.i < PL.beats.length - 1) show(PL.i + 1); else setPlaying(false); }
 function setPlaying(on) {
   if (on === PL.playing) return;
   PL.pos = beatPos(); PL.playing = on; $('#bigPlay').hidden = true;
+  if (on) { audioInit(); if (AU.speaking && speechSynthesis.paused) speechSynthesis.resume(); else if (AU.spoken !== PL.i) speak(); }
+  else if (AU.speaking) speechSynthesis.pause();
   schedule();
   $('#b-play').innerHTML = `<i data-lucide="${on ? 'pause' : 'play'}"></i>`; lucide.createIcons();
 }
