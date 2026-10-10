@@ -660,7 +660,7 @@ body{overflow-x:hidden}
   <div class="flex flex-wrap items-end justify-between gap-3">
     <div class="min-w-0">
       <h1 style="font-family:var(--f-display)" class="text-2xl font-black tracking-wide">单纯形法习题演算</h1>
-      <p class="text-sm text-slate-500 mt-1">14 道习题逐表演示。判据：检验数 σ<sub>j</sub> = c<sub>B</sub>B<sup>−1</sup>P<sub>j</sub> − c<sub>j</sub>，全部 σ<sub>j</sub> ≤ 0 时取得全局极小。</p>
+      <p class="text-sm text-slate-500 mt-1">14 道习题逐表演示。判据：全部检验数 σ<sub>j</sub> ≤ 0 时取得全局极小。</p>
     </div>
     <p class="text-xs text-slate-500">空格 播放/暂停 · ← → 上一步/下一步 · PgUp PgDn 换题 · F 全屏 · 拖动右侧多面体可旋转</p>
   </div>
@@ -893,7 +893,7 @@ function buildBeats(S, pi, total) {
     }
     if (terms.length) tab('elim', first, pk, { sigOp: eTxt,
       say: `基变量的检验数必须为 0。${terms.map(t => V2(first.basis[t.i])).join('、')} 列的 σ 现在不是 0，把它们所在的行乘以各自的 c<sub>B</sub> 加到 σ 行上，这些列就消成了 0。`,
-      f: `σ ← ${eTxt}，结果与 σ<sub>j</sub> = c<sub>B</sub>·P<sub>j</sub> − c<sub>j</sub> 相同` });
+      f: `σ ← ${eTxt}` });
     ph.iters.forEach(it => {
       const k = it.enter, r = it.leave, s = it.snap;
       tab('enter', s, pk, { k, say: `${sig(names[k])} = ${fr(s.sigma[k])} 是最大的正检验数，${V2(k)} 入基。${V2(k)} 每增加 1，${zl} 下降 ${fr(s.sigma[k])}。` });
